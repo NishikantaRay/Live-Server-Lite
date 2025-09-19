@@ -1,348 +1,207 @@
-# Live Server Lite# Live Server Lite
+# Live Server Lite
 
+A lightweight **Visual Studio Code extension** that provides instant live preview of your web projects with automatic browser refresh on file changes.
 
+---
 
-A lightweight live server extension for Visual Studio Code that provides instant live preview of your web projects with automatic browser refresh on file changes.A lightweight live server extension for Visual Studio Code that provides instant live preview of your web projects with automatic browser refresh on file changes.
+## ✨ Features
 
+- 🚀 **Quick Start**: Launch a local development server with one command.
+- 🔄 **Auto-reload**: Automatically refreshes your browser when files change.
+- 🎯 **Right-click Support**: Open any HTML file directly with Live Server Lite.
+- 📊 **Status Bar Integration**: Start/stop the server with a single click.
+- 🌐 **Smart File Opening**: Opens the specific HTML file instead of only `index.html`.
+- ⚡ **WebSocket Live Reload**: Fast and reliable auto-refresh.
+- 🛡️ **Robust Error Handling**: User-friendly error messages.
+- 📱 **Cross-platform**: Works on Windows, macOS, and Linux.
+- 🌍 **Network Access**: Access your site from other devices on the same network.
 
+---
 
-## ✨ Features## ✨ Features
+## 📦 Installation
 
+### From VS Code Marketplace (Recommended)
 
+1. Open VS Code.
+2. Go to **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+3. Search for **Live Server Lite**.
+4. Click **Install**.
 
-- 🚀 **Quick Start**: Launch a local development server with one command- 🚀 **Quick Start**: Launch a local development server with one command
+### From VSIX File
 
-- 🔄 **Auto-reload**: Automatically refreshes your browser when files change- 🔄 **Auto-reload**: Automatically refreshes your browser when files change
+1. Download the `.vsix` file from the [releases](https://github.com/Nishikanta12/live-server-lite/releases).
+2. In VS Code, press `Ctrl+Shift+P` / `Cmd+Shift+P`.
+3. Type **Install from VSIX**.
+4. Select the downloaded `.vsix` file.
 
-- 🎯 **Right-click Support**: Open any HTML file directly with Live Server- 🎯 **Simple & Lightweight**: Minimal setup, maximum productivity
+---
 
-- 📊 **Status Bar Integration**: Easy access via status bar button- 📱 **Cross-platform**: Works on Windows, macOS, and Linux
+## 🚀 Usage
 
-- 🌐 **Smart File Opening**: Opens specific HTML files instead of just index.html- 🌐 **Multiple Browsers**: Opens in your default browser automatically
+### Start the Server
 
-- ⚡ **WebSocket Live Reload**: Fast and reliable auto-refresh using WebSocket technology- ⚡ **Fast**: Optimized for quick development cycles
+- **Method 1: Right-click HTML File**  
+  Right-click any `.html` file in the Explorer and choose **Open with Live Server Lite**.
 
-- 🛡️ **Error Handling**: Robust error handling with user-friendly messages
+- **Method 2: Status Bar Button**  
+  Click the **📡 Go Live** button at the bottom of VS Code.
 
-- 📱 **Cross-platform**: Works on Windows, macOS, and Linux## 📦 Installation
+- **Method 3: Command Palette**  
+  Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`), type  
+  **Live Server Lite: Start Server**, and press Enter.
 
+Your project will open in your default browser on `http://localhost:5500` (or the next available port).
 
+### 🌍 Network Access
 
-## 📦 Installation### From VS Code Marketplace (Recommended)
+The server automatically binds to all network interfaces (`0.0.0.0`), making it accessible from other devices on your network. When you start the server, you'll see both URLs:
 
-1. Open VS Code
+- **Local**: `http://localhost:5500` - Access from your computer
+- **Network**: `http://192.168.x.x:5500` - Access from other devices (phones, tablets, etc.)
 
-### From VS Code Marketplace (Recommended)2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+You can click "Copy Network URL" to easily share the network address with other devices on your network.
 
-1. Open VS Code3. Search for "Live Server Lite"
+### Stop the Server
 
-2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)4. Click Install
+- Click **⏹️ Stop Live Server** in the status bar, **or**
+- Use the Command Palette: **Live Server Lite: Stop Server**.
 
-3. Search for "Live Server Lite"
+---
 
-4. Click Install### From VSIX File
+## 🛠️ How It Works
 
-1. Download the `.vsix` file from releases
+- **Express.js** serves static files.
+- **WebSocket** enables real-time communication for live reload.
+- **Chokidar** efficiently watches for file changes.
+- Automatic script injection refreshes the browser when files change.
 
-### From VSIX File2. Open VS Code
-
-1. Download the `.vsix` file from releases3. Press `Ctrl+Shift+P` / `Cmd+Shift+P`
-
-2. Open VS Code4. Type "Install from VSIX"
-
-3. Press `Ctrl+Shift+P` / `Cmd+Shift+P`5. Select the downloaded `.vsix` file
-
-4. Type "Install from VSIX"
-
-5. Select the downloaded `.vsix` file## 🚀 Usage
-
-
-
-## 🚀 Usage### Starting the Server
-
-
-
-### Method 1: Right-click on HTML File (New!)1. Open your project folder in VS Code
-
-1. Right-click on any `.html` file in the VS Code Explorer2. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-
-2. Select **"Open with Live Server Lite"**3. Type "Live Server Lite: Start Server" and press Enter
-
-3. Your HTML file opens in browser with live reload enabled4. Your default browser will open with your project running on a local server
-
-5. The server typically runs on `http://localhost:3000` or the next available port
-
-### Method 2: Status Bar Button (New!)
-
-1. Look for the **"📡 Go Live"** button in the bottom status bar### Stopping the Server
-
-2. Click it to start the server (opens index.html by default)
-
-3. When running, button changes to **"⏹️ Stop Live Server"**1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-
-2. Type "Live Server Lite: Stop Server" and press Enter
-
-### Method 3: Command Palette3. The server will stop and the browser tab will no longer auto-refresh
-
-1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-
-2. Type "Live Server Lite: Start Server" and press Enter### Alternative Methods
-
-3. Your default browser will open with your project running on `http://localhost:5500`
-
-- **Right-click**: Right-click on an HTML file in the Explorer and select "Start Live Server"
-
-### Stopping the Server- **Status Bar**: Click the "Live Server" button in the status bar (when available)
-
-- Click the **"⏹️ Stop Live Server"** button in status bar, OR
-
-- Use Command Palette: "Live Server Lite: Stop Server"## 🛠️ Configuration
-
-
-
-## 🛠️ How It WorksCurrently, Live Server Lite works with default settings optimized for most use cases. Future versions will include customizable options for:
-
-
-
-Live Server Lite uses:- Custom port selection
-
-- **Express.js** for serving static files- Browser selection
-
-- **WebSocket** for real-time communication with browser- Auto-open preferences
-
-- **Chokidar** for efficient file watching- File watching patterns
-
-- **Automatic Script Injection** to enable live reload in your HTML pages
+---
 
 ## 📂 Supported File Types
 
-The extension automatically injects a small WebSocket client script into your HTML pages that listens for file changes and refreshes the browser automatically.
+- **HTML** (`.html`, `.htm`)
+- **CSS / Preprocessors** (`.css`, `.scss`, `.sass`, `.less`)
+- **JavaScript / TypeScript / JSX / TSX**
+- **Images** (`.jpg`, `.png`, `.gif`, `.svg`, `.webp`)
+- **Other assets** (fonts, videos, etc.)
 
-Live Server Lite works with all web technologies:
+---
 
-## 📂 Supported File Types
+## 🔧 Development
 
-- **HTML** files (.html, .htm)
+### Prerequisites
 
-Live Server Lite works with all web technologies:- **CSS** files (.css, .scss, .sass, .less)
-
-- **HTML** files (.html, .htm)- **JavaScript** files (.js, .ts, .jsx, .tsx)
-
-- **CSS** files (.css, .scss, .sass, .less)- **Images** (.jpg, .png, .gif, .svg, .webp)
-
-- **JavaScript** files (.js, .ts, .jsx, .tsx)- **Other** web assets
-
-- **Images** (.jpg, .png, .gif, .svg, .webp)
-
-- **Other** web assets (fonts, videos, etc.)## 🔧 Development
-
-
-
-## ⚙️ Configuration### Prerequisites
-
-
-
-Live Server Lite runs on **port 5500** by default and serves files from your workspace root directory. The extension automatically:- Node.js (v16 or higher)
-
+- Node.js v16 or higher
 - npm or yarn
+- Visual Studio Code ^1.74.0
 
-- Ignores `node_modules`, `.git`, and `dist` folders for file watching- Visual Studio Code
-
-- Injects WebSocket client code for live reload
-
-- Opens your default browser automatically### Building from Source
-
-- Provides user-friendly error messages
+### Build from Source
 
 ```bash
-
-## 🔧 Development# Clone the repository
-
-git clone <repository-url>
-
-### Prerequisitescd live-server-lite
-
-- Node.js (v16 or higher)
-
-- npm or yarn# Install dependencies
-
-- Visual Studio Code ^1.104.0npm install
-
-
-
-### Building from Source# Compile the extension
-
-npm run compile
-
-```bash
-
-# Clone the repository# Run tests
-
-git clone https://github.com/Nishikanta12/live-server-lite.gitnpm test
-
+git clone https://github.com/NishikantaRay/live-server-lite.git
 cd live-server-lite
+npm install
+npm run compile     # Build the extension
+npm run package     # Package for VS Code
+```
 
-# Package the extension
-
-# Install dependenciesnpm run package
-
-npm install```
-
-
-
-# Compile the extension### Running in Development
-
-npm run compile
+### Run in Development
 
 1. Open the project in VS Code
+2. Press `F5` to open Extension Development Host
+3. Test the extension in the new window
 
-# Package the extension2. Press `F5` to open a new Extension Development Host window
-
-npm run package3. Test the extension in the new window
-
-```
+---
 
 ## 🤝 Contributing
 
-### Running in Development
+Contributions are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
-1. Open the project in VS CodeContributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+### Development Setup
 
-2. Press `F5` to open a new Extension Development Host window
-
-3. Test the extension in the new window### Development Setup
-
-
-
-## 🤝 Contributing1. Fork the repository
-
+1. Fork the repository
 2. Clone your fork locally
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.3. Install dependencies: `npm install`
-
+3. Install dependencies: `npm install`
 4. Make your changes
+5. Test with `F5` (Extension Development Host)
+6. Submit a pull request
 
-### Development Setup5. Test your changes
+---
 
-1. Fork the repository6. Submit a pull request
+## 📋 Requirements
 
-2. Clone your fork locally
-
-3. Install dependencies: `npm install`## 📋 Requirements
-
-4. Make your changes
-
-5. Test your changes with `F5` (Extension Development Host)- Visual Studio Code ^1.74.0
-
-6. Submit a pull request- Node.js environment for development
-
-
-
-## 📋 Requirements## 🐛 Known Issues
-
-
-
-- **Visual Studio Code** ^1.104.0- None currently reported
-
+- **Visual Studio Code** ^1.74.0
 - **Node.js** environment for development
+- An open workspace/folder in VS Code
 
-- An open workspace/folder in VS Code## 📝 Release Notes
+---
 
+## 🐛 Known Issues
 
+- Currently serves from workspace root only
+- WebSocket connections may need manual refresh on network switching
 
-## 🐛 Known Issues### 0.0.2
+---
 
+## 📝 Release Notes
 
+### 0.0.5 (Latest)
 
-- Server runs on a fixed port (5500) - port customization coming in future versions- Fixed command registration issues
+- ✨ **NEW**: Network access support - access from other devices on your network
+- ✨ **NEW**: Automatic IP address detection and display  
+- ✨ **NEW**: "Copy Network URL" button for easy sharing
+- 🔧 **Improved**: Enhanced status bar tooltip with both local and network URLs
+- 🔧 **Improved**: Better user experience with URL selection options
 
-- Currently serves from workspace root only- Added proper start/stop server functionality  
+### 0.0.4
 
-- Enhanced error handling and user feedback
-
-## 📝 Release Notes- Improved extension robustness
-
-- Updated comprehensive documentation
-
-### 0.0.3 (Latest)
-
-- ✨ **NEW**: Right-click context menu for HTML files### 0.0.1
-
+- ✨ **NEW**: Right-click context menu for HTML files
 - ✨ **NEW**: Status bar integration with "Go Live" button
+- ✨ **NEW**: Smart file opening for specific HTML files
+- 🔧 **Improved**: Better error handling and user feedback
+- 🔧 **Improved**: Enhanced WebSocket live reload functionality
 
-- ✨ **NEW**: Smart file opening - opens specific HTML files- Initial release
-
-- 🔧 **Improved**: Better error handling and user feedback- Basic live server functionality
-
-- 🔧 **Improved**: Enhanced WebSocket live reload functionality- Start/Stop commands
-
-- 📚 **Updated**: Comprehensive documentation- Auto-reload on file changes
-
-
-
-### 0.0.2## 📄 License
+### 0.0.2
 
 - Fixed command registration issues
-
-- Added proper start/stop server functionality  This project is licensed under the MIT License - see the LICENSE file for details.
-
+- Added proper start/stop server functionality
 - Enhanced error handling and user feedback
+- Improved extension robustness
 
-- Improved extension robustness## 🙋‍♂️ Support
-
-
-
-### 0.0.1If you encounter any issues or have questions:
+### 0.0.1
 
 - Initial release
+- Basic live server functionality
+- Start/Stop commands
+- Auto-reload on file changes
 
-- Basic live server functionality1. Check the [Known Issues](#-known-issues) section
+---
 
-- Start/Stop commands2. Search existing issues in the repository
+## 📄 License
 
-- Auto-reload on file changes3. Create a new issue with detailed information about your problem
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
 
+## 🙋‍♂️ Support
 
-## 📄 License## 🌟 Feedback
+If you encounter any issues:
 
+1. Check the [Known Issues](#-known-issues) section
+2. Search existing issues in the [GitHub repository](https://github.com/NishikantaRay/live-server-lite)
+3. Create a new issue with detailed information
 
-
-This project is licensed under the MIT License - see the LICENSE file for details.Your feedback is valuable! If you enjoy using Live Server Lite, please:
-
-
-
-## 🙋‍♂️ Support- ⭐ Star the repository
-
-- 📝 Leave a review on the VS Code Marketplace
-
-If you encounter any issues or have questions:- 🐛 Report bugs or suggest features
-
-
-
-1. Check the [Known Issues](#-known-issues) section---
-
-2. Search existing issues in the [GitHub repository](https://github.com/Nishikanta12/live-server-lite)
-
-3. Create a new issue with detailed information about your problem**Enjoy coding with Live Server Lite!** 🎉ver Lite
-
-A lightweight live server for VS Code.
+---
 
 ## 🌟 Feedback
 
-## Features
-
-Your feedback is valuable! If you enjoy using Live Server Lite, please:* Auto-reload browser on file save
-
-* Simple start/stop commands
+Your feedback is valuable! Please:
 
 - ⭐ Star the repository on GitHub
+- 📝 Leave a review on the VS Code Marketplace  
+- 🐛 Report bugs or suggest features
 
-- 📝 Leave a review on the VS Code Marketplace## Usage
-
-- 🐛 Report bugs or suggest features through GitHub issues1. Install the extension.
-
-2. Run “Live Server Lite: Start Server” from the Command Palette.
+---
 
 ## 👨‍💻 Author
 
@@ -353,4 +212,4 @@ Created by **Nishikanta Ray**
 
 **Enjoy coding with Live Server Lite!** 🎉
 
-*Making web development faster, one reload at a time.*# Live-Server-Lite
+*Making web development faster, one reload at a time.*

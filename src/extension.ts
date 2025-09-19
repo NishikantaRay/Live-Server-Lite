@@ -5,10 +5,27 @@ import * as WebSocket from 'ws';
 import * as chokidar from 'chokidar';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 
 let server: http.Server | undefined;
 let watcher: chokidar.FSWatcher | undefined;
 let statusBarItem: vscode.StatusBarItem;
+
+// Helper function to get local IP address
+function getLocalIPAddress(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    const iface = interfaces[name];
+    if (iface) {
+      for (const alias of iface) {
+        if (alias.family === 'IPv4' && !alias.internal) {
+          return alias.address;
+        }
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 export function activate(context: vscode.ExtensionContext) {
   // Create status bar item
@@ -98,15 +115,30 @@ function startLiveServer(htmlUri?: vscode.Uri) {
       });
     });
 
-  server.listen(port, () => {
-    const url = `http://localhost:${port}${htmlUri ? defaultFile : ''}`;
-    vscode.window.showInformationMessage(`Live Server running at ${url}`);
-    vscode.env.openExternal(vscode.Uri.parse(url));
+  server.listen(port, '0.0.0.0', () => {
+    const localIP = getLocalIPAddress();
+    const localUrl = `http://localhost:${port}${htmlUri ? defaultFile : ''}`;
+    const networkUrl = `http://${localIP}:${port}${htmlUri ? defaultFile : ''}`;
+    
+    vscode.window.showInformationMessage(
+      `Live Server running at:\n• Local: ${localUrl}\n• Network: ${networkUrl}`,
+      'Open Local', 'Copy Network URL'
+    ).then(selection => {
+      if (selection === 'Open Local') {
+        vscode.env.openExternal(vscode.Uri.parse(localUrl));
+      } else if (selection === 'Copy Network URL') {
+        vscode.env.clipboard.writeText(networkUrl);
+        vscode.window.showInformationMessage('Network URL copied to clipboard!');
+      }
+    });
+    
+    // Also open local URL by default
+    vscode.env.openExternal(vscode.Uri.parse(localUrl));
     
     // Update status bar
     statusBarItem.text = '$(debug-stop) Stop Live Server';
     statusBarItem.command = 'liveServerLite.stop';
-    statusBarItem.tooltip = 'Click to stop Live Server Lite';
+    statusBarItem.tooltip = `Live Server running\n• Local: ${localUrl}\n• Network: ${networkUrl}`;
   });    server.on('error', (error) => {
       vscode.window.showErrorMessage(`Failed to start server: ${error.message}`);
       server = undefined;
