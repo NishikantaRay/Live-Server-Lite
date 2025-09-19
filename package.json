@@ -3,7 +3,8 @@
   "publisher": "Nishikanta12",     
   "name": "live-server-lite",
   "description": "A lightweight live server extension for VS Code with auto-reload functionality",
-  "version": "0.0.3",
+  "version": "0.0.4",
+  "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.104.0"
   },
@@ -12,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Nishikanta12/live-server-lite"
+    "url": "https://github.com/NishikantaRay/Live-Server-Lite"
   },
   "activationEvents": [],
   "contributes": {
