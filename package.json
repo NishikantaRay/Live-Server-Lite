@@ -1,0 +1,78 @@
+{
+  "displayName": "Live Server Lite",
+  "publisher": "Nishikanta12",     
+  "name": "live-server-lite",
+  "description": "A lightweight live server extension for VS Code with auto-reload functionality",
+  "version": "0.0.3",
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nishikanta12/live-server-lite"
+  },
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "liveServerLite.start",
+        "title": "Live Server Lite: Start Server"
+      },
+      {
+        "command": "liveServerLite.stop",
+        "title": "Live Server Lite: Stop Server"
+      },
+      {
+        "command": "liveServerLite.openWithLiveServer",
+        "title": "Open with Live Server Lite"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "liveServerLite.openWithLiveServer",
+          "when": "resourceExtname == .html",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "main": "./dist/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.104.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.34.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "bufferutil": "^4.0.9",
+    "chokidar": "^4.0.3",
+    "express": "^5.1.0",
+    "utf-8-validate": "^6.0.5",
+    "ws": "^8.18.3"
+  }
+}
