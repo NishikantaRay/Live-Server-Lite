@@ -74,7 +74,9 @@ suite('ServerManager Unit Tests', () => {
       this.timeout(10000); // Increase timeout for server operations
       
       try {
-        const response = await serverManager.start();
+        // Use a random port in the high range to avoid conflicts
+        const testPort = 30000 + Math.floor(Math.random() * 10000);
+        const response = await serverManager.start(undefined, { port: testPort });
         
         assert.ok(response, 'Should return response object');
         assert.strictEqual(response.success, true, 'Response should indicate success');

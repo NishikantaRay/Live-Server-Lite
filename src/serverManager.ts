@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as http from 'http';
+import * as https from 'https';
 import * as WebSocket from 'ws';
 import * as path from 'path';
 import express from 'express';
@@ -10,11 +11,15 @@ import {
   ServerState,
   ServerResponse,
   ServerStats,
-  ServerOptions
+  ServerOptions,
+  EnhancedServerOptions,
+  HTTPSOptions,
+  CertificateInfo
 } from './types';
 import { FileWatcher } from './fileWatcher';
 import { NotificationManager } from './notificationManager';
 import { BrowserManager } from './browserManager';
+import { CertificateManager } from './certificateManager';
 import { 
   generateUrls, 
   getRelativePath, 
@@ -29,11 +34,13 @@ export class ServerManager implements LiveServerManager {
   private fileWatcher: FileWatcher;
   private notificationManager: NotificationManager;
   private browserManager: BrowserManager;
+  private certificateManager: CertificateManager;
 
   constructor() {
     this.fileWatcher = new FileWatcher();
     this.notificationManager = new NotificationManager();
     this.browserManager = new BrowserManager();
+    this.certificateManager = new CertificateManager();
     
     // Initialize notifications with default options
     this.notificationManager.initialize({ 
@@ -43,16 +50,16 @@ export class ServerManager implements LiveServerManager {
   }
 
   /**
-   * Start the live server
+   * Start the live server with optional HTTPS support
    */
-  async start(htmlUri?: vscode.Uri, options?: ServerOptions): Promise<ServerResponse> {
+  async start(htmlUri?: vscode.Uri, options?: EnhancedServerOptions): Promise<ServerResponse> {
     if (this.state.server) {
       throw new Error('Server is already running');
     }
 
     try {
-      const config = await this.createServerConfig(htmlUri);
-      await this.startServer(config);
+      const config = await this.createServerConfig(htmlUri, options);
+      await this.startServer(config, options?.https);
       
       const serverInfo = this.getServerInfo();
       if (!serverInfo) {
@@ -72,7 +79,7 @@ export class ServerManager implements LiveServerManager {
 
       return {
         success: true,
-        message: 'Server started successfully',
+        message: `Server started successfully on ${options?.https?.enabled ? 'HTTPS' : 'HTTP'}`,
         data: serverInfo
       };
     } catch (error) {
@@ -120,12 +127,28 @@ export class ServerManager implements LiveServerManager {
         return;
       }
 
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          this.cleanup();
+          resolve({
+            success: true,
+            message: 'Server stopped (timeout reached)'
+          });
+        }
+      }, 3000);
+
       this.state.server.close(() => {
-        this.cleanup();
-        resolve({
-          success: true,
-          message: 'Server stopped successfully'
-        });
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          this.cleanup();
+          resolve({
+            success: true,
+            message: 'Server stopped successfully'
+          });
+        }
       });
     });
   }
@@ -160,7 +183,11 @@ export class ServerManager implements LiveServerManager {
       return null;
     }
 
-    const { localUrl, networkUrl } = generateUrls(this.state.config.port, this.state.config.defaultFile);
+    const { localUrl, networkUrl } = generateUrls(
+      this.state.config.port, 
+      this.state.config.defaultFile || '',
+      this.state.isHttps || false
+    );
     
     return {
       port: this.state.config.port,
@@ -201,38 +228,55 @@ export class ServerManager implements LiveServerManager {
   /**
    * Create server configuration
    */
-  private async createServerConfig(htmlUri?: vscode.Uri): Promise<ServerConfig> {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
+  private async createServerConfig(htmlUri?: vscode.Uri, options?: EnhancedServerOptions): Promise<ServerConfig> {
+    const config = vscode.workspace.getConfiguration('liveServerLite');
     
-    if (!workspaceFolders) {
-      throw new Error('No workspace folder is open');
+    // Get current workspace folder
+    const workspaceFolder = htmlUri 
+      ? vscode.workspace.getWorkspaceFolder(htmlUri)
+      : vscode.workspace.workspaceFolders?.[0];
+
+    if (!workspaceFolder) {
+      throw new Error('No workspace folder found. Please open a folder or file first.');
     }
 
-    const root = workspaceFolders[0].uri.fsPath;
-    let defaultFile = '/index.html';
-
+    // Determine root directory
+    let rootDir: string;
     if (htmlUri) {
-      defaultFile = getRelativePath(root, htmlUri.fsPath);
+      const stat = await vscode.workspace.fs.stat(htmlUri);
+      rootDir = (stat.type & vscode.FileType.Directory) 
+        ? htmlUri.fsPath 
+        : path.dirname(htmlUri.fsPath);
+    } else {
+      rootDir = workspaceFolder.uri.fsPath;
     }
 
+    // Find available port
+    const requestedPort = options?.port || config.get<number>('port', 3000);
+    const port = await this.findAvailablePort(requestedPort);
+    
+    if (!port) {
+      throw new Error('Unable to find available port');
+    }
+    
     return {
-      port: 5500, // TODO: Make this configurable
-      host: '0.0.0.0',
-      root,
-      defaultFile,
-      ignored: getDefaultIgnorePatterns()
+      port,
+      root: rootDir,
+      host: options?.host || config.get<string>('host', 'localhost'),
+      open: options?.open ?? config.get<boolean>('openBrowser', true),
+      https: options?.https || config.get<boolean>('https', false),
+      cors: options?.cors ?? config.get<boolean>('cors', true),
+      verbose: options?.verbose ?? config.get<boolean>('verbose', false)
     };
-  }
-
-  /**
+  }  /**
    * Start the Express server with WebSocket support
    */
-  private async startServer(config: ServerConfig): Promise<void> {
+  private async startServer(config: ServerConfig, httpsOptions?: HTTPSOptions): Promise<void> {
     const app = express();
     
     // Middleware to inject WebSocket script into HTML responses
     app.use(async (req, res, next) => {
-      const filePath = path.join(config.root, req.path === '/' ? config.defaultFile : req.path);
+      const filePath = path.join(config.root, req.path === '/' ? config.defaultFile || 'index.html' : req.path);
       
       if (filePath.endsWith('.html') && await fileExists(filePath)) {
         try {
@@ -250,12 +294,60 @@ export class ServerManager implements LiveServerManager {
     // Serve static files
     app.use(express.static(config.root));
 
-    // Create HTTP server and WebSocket server
-    this.state.server = http.createServer(app);
+    // Create server (HTTP or HTTPS based on options)
+    let server;
+    let isHttps = false;
+    let certInfo: any = null;
+
+    if (httpsOptions?.enabled && this.certificateManager) {
+      // HTTPS server
+      try {
+        certInfo = await this.certificateManager.getCertificates({
+          domain: httpsOptions.domain || 'localhost',
+          certPath: httpsOptions.certPath,
+          keyPath: httpsOptions.keyPath,
+          generateIfMissing: httpsOptions.autoGenerateCert ?? true
+        });
+
+        if (!certInfo) {
+          throw new Error('Failed to obtain HTTPS certificates');
+        }
+
+        // Show warning for self-signed certificates
+        if (certInfo.selfSigned && httpsOptions.warnOnSelfSigned !== false) {
+          await this.notificationManager.showCertificateWarning(
+            httpsOptions.domain || 'localhost',
+            certInfo.certPath
+          );
+        }
+
+        const httpsModule = await import('https');
+        
+        server = httpsModule.createServer({
+          key: certInfo.key,
+          cert: certInfo.cert
+        }, app);
+
+        isHttps = true;
+        console.log(`HTTPS server configured with certificate for domain: ${certInfo.domain}`);
+      } catch (error) {
+        console.error('Failed to setup HTTPS server, falling back to HTTP:', error);
+        server = http.createServer(app);
+        isHttps = false;
+      }
+    } else {
+      // HTTP server
+      server = http.createServer(app);
+      isHttps = false;
+    }
+
+    this.state.server = server;
     this.state.webSocketServer = new WebSocket.Server({ server: this.state.server });
     this.state.config = config;
     this.state.startTime = new Date();
     this.state.connections = new Set();
+    this.state.isHttps = isHttps;
+    this.state.certInfo = certInfo;
 
     // Track WebSocket connections
     this.state.webSocketServer.on('connection', (ws: WebSocket) => {
@@ -272,7 +364,7 @@ export class ServerManager implements LiveServerManager {
       useNativeWatcher: true,
       largeProjectOptimization: true
     };
-    this.fileWatcher.start(config.root, config.ignored, watcherOptions);
+    this.fileWatcher.start(config.root, config.ignored || [], watcherOptions);
     this.fileWatcher.onChange((event) => {
       console.log(`File changed: ${event.path}`);
       this.broadcastReload();
@@ -285,17 +377,36 @@ export class ServerManager implements LiveServerManager {
         return;
       }
 
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          this.cleanup();
+          reject(new Error('Server startup timeout - failed to start within 5 seconds'));
+        }
+      }, 5000);
+
       this.state.server.listen(config.port, config.host, () => {
-        resolve();
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          const protocol = isHttps ? 'https' : 'http';
+          console.log(`${protocol.toUpperCase()} server running at ${protocol}://${config.host}:${config.port}`);
+          resolve();
+        }
       });
 
       this.state.server.on('error', (error: NodeJS.ErrnoException) => {
-        this.cleanup();
-        
-        if (error.code === 'EADDRINUSE') {
-          reject(new Error(`Port ${config.port} is already in use`));
-        } else {
-          reject(new Error(`Failed to start server: ${error.message}`));
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          this.cleanup();
+          
+          if (error.code === 'EADDRINUSE') {
+            reject(new Error(`Port ${config.port} is already in use`));
+          } else {
+            reject(new Error(`Failed to start server: ${error.message}`));
+          }
         }
       });
     });
@@ -401,14 +512,31 @@ export class ServerManager implements LiveServerManager {
     return new Promise((resolve) => {
       const server = http.createServer();
       
+      let resolved = false;
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          server.close(() => {});
+          resolve(false);
+        }
+      }, 1000);
+      
       server.on('error', () => {
-        resolve(false);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          resolve(false);
+        }
       });
       
-      server.listen(port, () => {
-        server.close(() => {
-          resolve(true);
-        });
+      server.listen(port, '127.0.0.1', () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          server.close(() => {
+            resolve(true);
+          });
+        }
       });
     });
   }

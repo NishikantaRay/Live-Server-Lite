@@ -31,10 +31,11 @@ export function getLocalIPAddress(): string {
 /**
  * Generate URLs for local and network access
  */
-export function generateUrls(port: number, filePath: string = ''): { localUrl: string; networkUrl: string } {
+export function generateUrls(port: number, filePath: string = '', isHttps: boolean = false): { localUrl: string; networkUrl: string } {
   const localIP = getLocalIPAddress();
-  const localUrl = `http://localhost:${port}${filePath}`;
-  const networkUrl = `http://${localIP}:${port}${filePath}`;
+  const protocol = isHttps ? 'https' : 'http';
+  const localUrl = `${protocol}://localhost:${port}${filePath}`;
+  const networkUrl = `${protocol}://${localIP}:${port}${filePath}`;
   
   return { localUrl, networkUrl };
 }
@@ -44,15 +45,33 @@ export function generateUrls(port: number, filePath: string = ''): { localUrl: s
  */
 export function getRelativePath(root: string, filePath: string): string {
   // Normalize both paths to handle cross-platform differences
-  const normalizedRoot = path.normalize(root);
-  const normalizedFilePath = path.normalize(filePath);
+  let normalizedRoot = path.normalize(root);
+  let normalizedFilePath = path.normalize(filePath);
   
+  // Convert Windows paths to Unix-style for consistent handling
+  if (process.platform === 'win32' || root.includes('\\') || filePath.includes('\\')) {
+    normalizedRoot = normalizedRoot.replace(/\\/g, '/');
+    normalizedFilePath = normalizedFilePath.replace(/\\/g, '/');
+  }
+  
+  // Check if filePath starts with root
+  if (normalizedFilePath.startsWith(normalizedRoot)) {
+    // Simple case: file is within root directory
+    let relativePath = normalizedFilePath.substring(normalizedRoot.length);
+    
+    // Ensure the path starts with '/'
+    if (!relativePath.startsWith('/')) {
+      relativePath = '/' + relativePath;
+    }
+    
+    return relativePath;
+  }
+  
+  // Fallback: try to use path.relative() and normalize the result
   let relativePath = path.relative(normalizedRoot, normalizedFilePath);
-  
-  // Convert backslashes to forward slashes for web URLs
   relativePath = relativePath.replace(/\\/g, '/');
   
-  // Ensure the path starts with '/'
+  // Ensure the path starts with '/' (for consistency with web URLs)
   if (!relativePath.startsWith('/')) {
     relativePath = '/' + relativePath;
   }

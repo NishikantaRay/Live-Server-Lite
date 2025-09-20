@@ -161,6 +161,37 @@ export class NotificationManager implements INotificationManager {
   }
 
   /**
+   * Show certificate warning for self-signed certificates
+   */
+  async showCertificateWarning(domain: string, certPath: string): Promise<string | undefined> {
+    if (!this.isEnabled) {
+      return;
+    }
+
+    const message = `HTTPS server is using a self-signed certificate for ${domain}. Your browser will show security warnings.`;
+    const actions: NotificationAction[] = [
+      { label: 'I Understand', action: 'acknowledge', isRecommended: true },
+      { label: 'Show Certificate Path', action: 'showCertPath', isRecommended: false },
+      { label: 'Learn More', action: 'learnMore', isRecommended: false }
+    ];
+
+    const result = await this.showNotification(message, 'warning', actions, { 
+      domain, 
+      certPath,
+      type: 'certificate-warning'
+    });
+
+    // Handle specific actions
+    if (result === 'showCertPath') {
+      await vscode.window.showInformationMessage(`Certificate location: ${certPath}`);
+    } else if (result === 'learnMore') {
+      await vscode.env.openExternal(vscode.Uri.parse('https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts'));
+    }
+
+    return result;
+  }
+
+  /**
    * Show a generic notification with actions
    */
   private async showNotification(

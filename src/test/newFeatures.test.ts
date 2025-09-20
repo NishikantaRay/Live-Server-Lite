@@ -2,19 +2,19 @@ import * as assert from 'assert';
 import { BrowserManager } from '../browserManager';
 import { NotificationManager } from '../notificationManager';
 
-describe('New Features Tests', () => {
-  describe('BrowserManager', () => {
+suite('New Features Tests', () => {
+  suite('BrowserManager', () => {
     let browserManager: BrowserManager;
 
-    beforeEach(() => {
+    setup(() => {
       browserManager = new BrowserManager();
     });
 
-    it('should initialize correctly', () => {
+    test('should initialize correctly', () => {
       assert.ok(browserManager);
     });
 
-    it('should return available browsers for current platform', () => {
+    test('should return available browsers for current platform', () => {
       const browsers = browserManager.getAvailableBrowsers();
       assert.ok(Array.isArray(browsers));
       assert.ok(browsers.length > 0);
@@ -28,25 +28,25 @@ describe('New Features Tests', () => {
       });
     });
 
-    it('should detect installed browsers', async () => {
+    test('should detect installed browsers', async () => {
       const browsers = await browserManager.detectInstalledBrowsers();
       assert.ok(Array.isArray(browsers));
       // May be empty if no browsers are installed, but should be an array
     });
   });
 
-  describe('NotificationManager', () => {
+  suite('NotificationManager', () => {
     let notificationManager: NotificationManager;
 
-    beforeEach(() => {
+    setup(() => {
       notificationManager = new NotificationManager();
     });
 
-    it('should initialize correctly', () => {
+    test('should initialize correctly', () => {
       assert.ok(notificationManager);
     });
 
-    it('should initialize with options', () => {
+    test('should initialize with options', () => {
       const options = {
         enabled: true,
         showInStatusBar: true
@@ -56,7 +56,7 @@ describe('New Features Tests', () => {
       assert.strictEqual(notificationManager.isNotificationsEnabled(), true);
     });
 
-    it('should toggle enabled state', () => {
+    test('should toggle enabled state', () => {
       notificationManager.setEnabled(false);
       assert.strictEqual(notificationManager.isNotificationsEnabled(), false);
       
@@ -64,7 +64,7 @@ describe('New Features Tests', () => {
       assert.strictEqual(notificationManager.isNotificationsEnabled(), true);
     });
 
-    it('should not show notifications when disabled', async () => {
+    test('should not show notifications when disabled', async () => {
       notificationManager.setEnabled(false);
       
       // These should not throw errors even when disabled

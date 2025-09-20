@@ -2,9 +2,9 @@ import * as assert from 'assert';
 import * as os from 'os';
 import { BrowserConfig } from '../types';
 
-describe('New Features Core Logic Tests', () => {
-  describe('Browser Configuration Types', () => {
-    it('should have correct BrowserConfig structure', () => {
+suite('New Features Core Logic Tests', () => {
+  suite('Browser Configuration Types', () => {
+    test('should have correct BrowserConfig structure', () => {
       const browserConfig: BrowserConfig = {
         name: 'Chrome',
         command: '/usr/bin/google-chrome',
@@ -19,13 +19,13 @@ describe('New Features Core Logic Tests', () => {
     });
   });
 
-  describe('Platform Detection', () => {
-    it('should detect current platform', () => {
+  suite('Platform Detection', () => {
+    test('should detect current platform', () => {
       const platform = os.platform();
       assert.ok(['win32', 'darwin', 'linux'].includes(platform));
     });
 
-    it('should handle different platforms', () => {
+    test('should handle different platforms', () => {
       const platforms = ['win32', 'darwin', 'linux'];
       
       platforms.forEach(platform => {
@@ -48,8 +48,8 @@ describe('New Features Core Logic Tests', () => {
     });
   });
 
-  describe('File Watcher Options', () => {
-    it('should have correct default options structure', () => {
+  suite('File Watcher Options', () => {
+    test('should have correct default options structure', () => {
       const defaultOptions = {
         ignoreInitial: true,
         persistent: true,
@@ -75,8 +75,8 @@ describe('New Features Core Logic Tests', () => {
     });
   });
 
-  describe('Optimized Ignore Patterns', () => {
-    it('should include common ignore patterns for large projects', () => {
+  suite('Optimized Ignore Patterns', () => {
+    test('should include common ignore patterns for large projects', () => {
       const optimizedPatterns = [
         '**/node_modules/**',
         '**/.git/**',
@@ -128,8 +128,8 @@ describe('New Features Core Logic Tests', () => {
     });
   });
 
-  describe('Notification System Types', () => {
-    it('should have correct notification severity types', () => {
+  suite('Notification System Types', () => {
+    test('should have correct notification severity types', () => {
       const severities = ['info', 'warning', 'error', 'success'];
       
       severities.forEach(severity => {
@@ -137,7 +137,7 @@ describe('New Features Core Logic Tests', () => {
       });
     });
 
-    it('should have correct notification action structure', () => {
+    test('should have correct notification action structure', () => {
       const notificationAction = {
         label: 'Open Browser',
         action: 'openBrowser',

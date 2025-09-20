@@ -9,12 +9,14 @@ export interface ServerConfig {
   port: number;
   host: string;
   root: string;
-  defaultFile: string;
-  ignored: string[];
+  defaultFile?: string;
+  ignored?: string[];
   cors?: boolean;
-  https?: boolean;
+  https?: boolean | HTTPSOptions;
   proxy?: ProxyConfig[];
   middleware?: MiddlewareConfig[];
+  open?: boolean;
+  verbose?: boolean;
 }
 
 export interface ProxyConfig {
@@ -31,6 +33,11 @@ export interface MiddlewareConfig {
 }
 
 export interface ServerOptions {
+  port?: number;
+  host?: string;
+  open?: boolean;
+  cors?: boolean;
+  verbose?: boolean;
   autoOpen?: boolean;
   browser?: string;
   browserPath?: string;
@@ -139,6 +146,8 @@ export interface ServerState {
   stats?: ServerStats;
   connections?: Set<WebSocket>;
   startTime?: Date;
+  isHttps?: boolean;
+  certInfo?: CertificateInfo;
 }
 
 export interface ExtensionState {
@@ -264,6 +273,7 @@ export interface NotificationManager {
   showServerError(error: Error): Promise<string | undefined>;
   showWatchingError(path: string, error: Error): Promise<string | undefined>;
   showBrowserError(browserPath: string, error: Error): Promise<string | undefined>;
+  showCertificateWarning(domain: string, certPath: string): Promise<string | undefined>;
   setEnabled(enabled: boolean): void;
   isNotificationsEnabled(): boolean;
 }
@@ -290,6 +300,48 @@ export interface Logger {
   info(message: string, data?: any): void;
   warn(message: string, data?: any): void;
   error(message: string, data?: any): void;
+}
+
+// HTTPS and Certificate Management Types
+export interface CertificateOptions {
+  domain?: string;
+  certPath?: string;
+  keyPath?: string;
+  generateIfMissing?: boolean;
+}
+
+export interface CertificateInfo {
+  cert: string;
+  key: string;
+  certPath?: string;
+  keyPath?: string;
+  domain: string;
+  isSelfSigned: boolean;
+  expiresAt: Date;
+  issuer: string;
+  subject: string;
+}
+
+export interface CertificateManager {
+  getCertificates(options?: CertificateOptions): Promise<CertificateInfo | null>;
+  getCertificateInfo(certPath: string): Promise<CertificateInfo | null>;
+  deleteCertificates(domain?: string): Promise<void>;
+  listCertificates(): Promise<CertificateInfo[]>;
+}
+
+export interface HTTPSOptions {
+  enabled: boolean;
+  port?: number;
+  certPath?: string;
+  keyPath?: string;
+  domain?: string;
+  autoGenerateCert?: boolean;
+  warnOnSelfSigned?: boolean;
+}
+
+// Enhanced Server Options with HTTPS support
+export interface EnhancedServerOptions extends ServerOptions {
+  https?: HTTPSOptions;
 }
 
 // Disposable Pattern
