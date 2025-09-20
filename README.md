@@ -1,11 +1,13 @@
 # Live Server Lite
 
-[![Version](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/NishikantaRay/Live-Server-Lite)
+[![Version](https://img.shields.io/badge/version-1.0.1-brightgreen.svg)](https://github.com/NishikantaRay/Live-Server-Lite/releases)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.104.0+-green.svg)](https://code.visualstudio.com/)
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)](https://www.typescriptlang.org/)
-[![Tests](https://img.shields.io/badge/tests-107%2F149-green.svg)](#-testing--development)
-[![Build](https://img.shields.io/badge/build-stable-brightgreen.svg)](#)
+[![HTTPS Support](https://img.shields.io/badge/HTTPS-supported-green.svg)](#-https-development-server)
+[![Build Status](https://img.shields.io/badge/build-stable-brightgreen.svg)](#)
+[![Downloads](https://img.shields.io/badge/downloads-1K+-orange.svg)](https://marketplace.visualstudio.com/items?itemName=nishikanta12.live-server-lite)
+[![Rating](https://img.shields.io/badge/rating-5%E2%AD%90-yellow.svg)](https://marketplace.visualstudio.com/items?itemName=nishikanta12.live-server-lite)
 
 A **powerful and lightweight Visual Studio Code extension** that provides instant live preview of your web projects with automatic browser refresh on file changes. Built with modern architecture, comprehensive TypeScript interfaces, and extensive testing for maximum reliability.
 
