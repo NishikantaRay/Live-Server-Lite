@@ -26,11 +26,26 @@ export function activate(context: vscode.ExtensionContext) {
     await startLiveServer(uri);
   });
 
+  const selectBrowserDisposable = vscode.commands.registerCommand('liveServerLite.selectBrowser', async () => {
+    await selectBrowser();
+  });
+
+  const toggleNotificationsDisposable = vscode.commands.registerCommand('liveServerLite.toggleNotifications', async () => {
+    await toggleNotifications();
+  });
+
+  const openBrowserSelectionDisposable = vscode.commands.registerCommand('liveServerLite.openBrowserSelection', async () => {
+    await openBrowserSelection();
+  });
+
   // Add to subscriptions
   context.subscriptions.push(
     startDisposable, 
     stopDisposable, 
-    openWithLiveServerDisposable, 
+    openWithLiveServerDisposable,
+    selectBrowserDisposable,
+    toggleNotificationsDisposable,
+    openBrowserSelectionDisposable,
     statusBar.getItem(),
     { dispose: () => serverManager.dispose() }
   );
@@ -111,6 +126,138 @@ async function stopLiveServer(): Promise<void> {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     vscode.window.showErrorMessage(`Failed to stop Live Server: ${errorMessage}`);
+  }
+}
+
+/**
+ * Select browser for opening Live Server
+ */
+async function selectBrowser(): Promise<void> {
+  try {
+    // Get the browser manager from server manager (needs to be exposed)
+    const config = vscode.workspace.getConfiguration('liveServerLite');
+    const currentBrowser = config.get('browserPath', 'default');
+
+    const quickPickItems = [
+      { 
+        label: currentBrowser === 'default' ? '$(check) System Default' : 'System Default', 
+        value: 'default',
+        description: 'Use system default browser'
+      },
+      { 
+        label: 'Custom Path...', 
+        value: 'custom',
+        description: 'Specify custom browser executable'
+      }
+    ];
+
+    const selected = await vscode.window.showQuickPick(quickPickItems, {
+      placeHolder: 'Select browser for Live Server',
+      matchOnDescription: true
+    });
+
+    if (!selected) {
+      return;
+    }
+
+    let browserPath = selected.value;
+    if (selected.value === 'custom') {
+      const customPath = await vscode.window.showInputBox({
+        prompt: 'Enter path to browser executable',
+        placeHolder: 'e.g., /Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        value: currentBrowser !== 'default' ? currentBrowser : '',
+        validateInput: (value) => {
+          if (!value || value.trim() === '') {
+            return 'Please enter a valid path';
+          }
+          return null;
+        }
+      });
+      
+      if (!customPath) {
+        return;
+      }
+      
+      browserPath = customPath;
+    }
+
+    await config.update('browserPath', browserPath, vscode.ConfigurationTarget.Global);
+    
+    const message = browserPath === 'default' 
+      ? 'Browser set to system default' 
+      : `Browser set to: ${browserPath}`;
+    vscode.window.showInformationMessage(message);
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    vscode.window.showErrorMessage(`Failed to select browser: ${errorMessage}`);
+  }
+}
+
+/**
+ * Toggle notifications on/off
+ */
+async function toggleNotifications(): Promise<void> {
+  try {
+    const config = vscode.workspace.getConfiguration('liveServerLite');
+    const enabled = config.get('notifications.enabled', true);
+    
+    await config.update('notifications.enabled', !enabled, vscode.ConfigurationTarget.Global);
+    
+    const message = !enabled 
+      ? 'Live Server notifications enabled' 
+      : 'Live Server notifications disabled';
+    vscode.window.showInformationMessage(message);
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    vscode.window.showErrorMessage(`Failed to toggle notifications: ${errorMessage}`);
+  }
+}
+
+/**
+ * Open browser selection dialog
+ */
+async function openBrowserSelection(): Promise<void> {
+  if (!serverManager.isRunning()) {
+    vscode.window.showInformationMessage('Start Live Server first to select a browser');
+    return;
+  }
+
+  try {
+    const serverInfo = serverManager.getServerInfo();
+    if (!serverInfo) {
+      vscode.window.showErrorMessage('Server information not available');
+      return;
+    }
+
+    const quickPickItems = [
+      { 
+        label: '$(browser) System Default',
+        value: 'default',
+        description: serverInfo.localUrl
+      },
+      { 
+        label: '$(settings) Select Browser...',
+        value: 'select',
+        description: 'Choose specific browser'
+      }
+    ];
+
+    const selected = await vscode.window.showQuickPick(quickPickItems, {
+      placeHolder: 'Open Live Server in browser',
+      matchOnDescription: true
+    });
+
+    if (selected?.value === 'default') {
+      await vscode.env.openExternal(vscode.Uri.parse(serverInfo.localUrl));
+    } else if (selected?.value === 'select') {
+      await selectBrowser();
+    }
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    vscode.window.showErrorMessage(`Failed to open browser selection: ${errorMessage}`);
   }
 }
 

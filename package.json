@@ -3,7 +3,7 @@
   "publisher": "Nishikanta12",     
   "name": "live-server-lite",
   "description": "A lightweight live server extension for VS Code with auto-reload functionality",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.104.0"
@@ -29,6 +29,18 @@
       {
         "command": "liveServerLite.openWithLiveServer",
         "title": "Open with Live Server Lite"
+      },
+      {
+        "command": "liveServerLite.selectBrowser",
+        "title": "Live Server Lite: Select Browser"
+      },
+      {
+        "command": "liveServerLite.toggleNotifications",
+        "title": "Live Server Lite: Toggle Notifications"
+      },
+      {
+        "command": "liveServerLite.openBrowserSelection",
+        "title": "Live Server Lite: Open in Browser..."
       }
     ],
     "menus": {
@@ -39,6 +51,64 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "Live Server Lite",
+      "properties": {
+        "liveServerLite.port": {
+          "type": "number",
+          "default": 3000,
+          "description": "Default port for Live Server"
+        },
+        "liveServerLite.host": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "Default host for Live Server"
+        },
+        "liveServerLite.browserPath": {
+          "type": "string",
+          "default": "default",
+          "description": "Path to browser executable, or 'default' for system default"
+        },
+        "liveServerLite.browserArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional arguments to pass to the browser"
+        },
+        "liveServerLite.notifications.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable desktop notifications for server events"
+        },
+        "liveServerLite.notifications.showInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show server status in status bar"
+        },
+        "liveServerLite.watcher.batchEvents": {
+          "type": "boolean",
+          "default": true,
+          "description": "Batch file change events for better performance"
+        },
+        "liveServerLite.watcher.batchDelay": {
+          "type": "number",
+          "default": 250,
+          "description": "Delay in milliseconds for batching file events"
+        },
+        "liveServerLite.watcher.largeProjectOptimization": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable optimizations for large projects (excludes node_modules, .git, etc.)"
+        },
+        "liveServerLite.watcher.useNativeWatcher": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use native file system watcher when available (macOS FSEvents)"
+        }
+      }
     }
   },
   "main": "./dist/extension.js",

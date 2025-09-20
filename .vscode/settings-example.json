@@ -1,0 +1,73 @@
+{
+  "_comment": "Live Server Lite Configuration Examples - Copy desired settings to your settings.json",
+  
+  "_basic_configuration": "Basic server settings",
+  "liveServerLite.port": 5500,
+  "liveServerLite.host": "localhost",
+  "liveServerLite.defaultFile": "index.html",
+  "liveServerLite.autoOpenBrowser": true,
+  
+  "_network_settings": "Network and accessibility options",
+  "liveServerLite.useNetworkInterface": true,
+  "liveServerLite.showNetworkUrl": true,
+  "liveServerLite.cors": true,
+  
+  "_security_settings": "Security and HTTPS options",
+  "liveServerLite.https": false,
+  "_https_note": "HTTPS requires SSL certificates and may need admin privileges",
+  
+  "_file_watching": "File monitoring configuration",
+  "liveServerLite.debounceDelay": 300,
+  "liveServerLite.ignoreFiles": [
+    "node_modules/**",
+    ".git/**",
+    "**/*.log",
+    "**/tmp/**",
+    "**/cache/**",
+    "**/*.temp"
+  ],
+  
+  "_examples_note": "=== WORKSPACE-SPECIFIC EXAMPLES (Uncomment as needed) ===",
+  
+  "_react_example": "For React/Vue/Angular projects, uncomment below:",
+  "_react_port": 3000,
+  "_react_defaultFile": "public/index.html",
+  "_react_ignoreFiles": [
+    "node_modules/**",
+    "src/**",
+    "build/**",
+    "dist/**"
+  ],
+  
+  "_static_site_example": "For Static Site Generators (Jekyll, Hugo), uncomment below:",
+  "_static_port": 4000,
+  "_static_defaultFile": "_site/index.html",
+  "_static_ignoreFiles": [
+    "_site/**",
+    ".jekyll-cache/**",
+    "node_modules/**"
+  ],
+  
+  "_php_example": "For PHP Development (static files only), uncomment below:",
+  "_php_port": 8080,
+  "_php_defaultFile": "index.php",
+  "_php_note": "Live Server Lite serves static files only - no PHP processing",
+  
+  "_performance_example": "For large projects (performance optimization), uncomment below:",
+  "_perf_debounceDelay": 1000,
+  "_perf_ignoreFiles": [
+    "node_modules/**",
+    "vendor/**",
+    "build/**",
+    "dist/**",
+    "**/*.log",
+    "**/*.cache",
+    "**/tmp/**"
+  ],
+  
+  "_multidevice_example": "For multi-device testing, uncomment below:",
+  "_multidevice_host": "0.0.0.0",
+  "_multidevice_useNetworkInterface": true,
+  "_multidevice_showNetworkUrl": true,
+  "_multidevice_cors": true
+}

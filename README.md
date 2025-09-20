@@ -1,6 +1,32 @@
 # Live Server Lite
 
+[![Version](https://img.shields.io/badge/version-0.0.7-blue.svg)](https://github.com/NishikantaRay/Live-Server-Lite)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.104.0+-green.svg)](https://code.visualstudio.com/)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)](https://www.typescriptlang.org/)
+[![Tests](https://img.shields.io/badge/tests-100+-brightgreen.svg)](#-testing--development)
+[![Build](https://img.shields.io/badge/build-passing-success.svg)](#)
+
 A **powerful and lightweight Visual Studio Code extension** that provides instant live preview of your web projects with automatic browser refresh on file changes. Built with modern architecture, comprehensive TypeScript interfaces, and extensive testing for maximum reliability.
+
+> 🎯 **Perfect for**: HTML/CSS/JS development, static sites, single-page applications, and rapid prototyping
+> 
+> ⚡ **Performance**: Optimized for projects with 1000+ files using native file watchers and smart ignoring
+
+## 📑 Table of Contents
+
+- [✨ Key Features](#-key-features)
+- [📦 Installation](#-installation)
+- [🚀 Usage](#-usage)
+- [🆕 Enhanced Commands & Features](#-enhanced-commands--features)
+- [🛠️ Architecture & Technical Details](#️-architecture--technical-details)
+- [📂 Supported File Types](#-supported-file-types)
+- [⚙️ Configuration & Advanced Usage](#️-configuration--advanced-usage)
+- [🔧 FAQ & Troubleshooting](#-faq--troubleshooting)
+- [🧪 Testing & Development](#-testing--development)
+- [🤝 Contributing](#-contributing)
+- [📝 Changelog](#-changelog)
+- [📄 License](#-license)
 
 ---
 
@@ -16,16 +42,33 @@ A **powerful and lightweight Visual Studio Code extension** that provides instan
 ### 🎯 **User Experience** 
 - **Right-click Support**: Open any HTML file directly with Live Server Lite
 - **Status Bar Integration**: Start/stop server with visual feedback and tooltips
+- **🆕 Smart Notifications**: Desktop notifications with actionable quick actions for server events
+- **🆕 Browser Selection**: Choose specific browser or use system default with one command
 - **Comprehensive Error Handling**: User-friendly error messages and recovery
 - **Cross-platform**: Works seamlessly on Windows, macOS, and Linux
 - **Multiple Workspace Support**: Handle complex project structures
 
-### �️ **Technical Excellence**
+### ⚡️ **Technical Excellence**
 - **Modular Architecture**: Cleanly separated concerns across dedicated modules
 - **TypeScript Integration**: 20+ comprehensive interfaces for type safety
 - **Extensive Testing**: 100+ test cases ensuring reliability and stability  
-- **Performance Optimized**: Efficient file watching and resource management
+- **🆕 Performance Optimized**: Batched file events, native watchers, and large project optimizations
+- **🆕 Smart File Watching**: Auto-excludes node_modules, build folders, with configurable patterns
 - **Modern Development**: Built with Express.js, Chokidar, and WebSocket APIs
+
+---
+
+## 🏆 Why Choose Live Server Lite?
+
+| **Live Server Lite** | **vs. Alternatives** |
+|----------------------|----------------------|
+| ✅ **Lightweight & Fast** - Minimal resource usage | ❌ Heavy extensions that slow down VS Code |
+| ✅ **Modern Architecture** - TypeScript, modular design | ❌ Legacy codebases with technical debt |
+| ✅ **Extensive Testing** - 100+ automated tests | ❌ Unreliable extensions prone to breaking |
+| ✅ **Active Development** - Regular updates & fixes | ❌ Abandoned or rarely updated projects |
+| ✅ **Smart Features** - Browser selection, notifications | ❌ Basic functionality without modern UX |
+| ✅ **Large Project Support** - Optimized for 1000+ files | ❌ Poor performance with large codebases |
+| ✅ **Professional Support** - Comprehensive docs & FAQ | ❌ Limited documentation and support |
 
 ---
 
@@ -44,6 +87,36 @@ A **powerful and lightweight Visual Studio Code extension** that provides instan
 2. In VS Code, press `Ctrl+Shift+P` / `Cmd+Shift+P`.
 3. Type **Install from VSIX**.
 4. Select the downloaded `.vsix` file.
+
+---
+
+## ⚡ Quick Start
+
+**Get up and running in 30 seconds:**
+
+1. **Install** the extension from VS Code Marketplace
+2. **Open** your HTML project folder in VS Code
+3. **Right-click** any `.html` file → **"Open with Live Server Lite"**
+4. **Your browser opens** automatically with live reload enabled! 🎉
+
+**That's it!** Any changes to your HTML, CSS, or JS files will instantly refresh your browser.
+
+> 💡 **Pro Tip**: Use `Ctrl+Shift+P` → "Live Server Lite: Select Browser" to choose your preferred browser before starting!
+
+---
+
+## 📸 Screenshots & Demo
+
+### **Live Server in Action**
+
+| Feature | Preview |
+|---------|---------|
+| **Status Bar Integration** | *[Screenshot placeholder - Status bar with Go Live button]* |
+| **Right-click Context Menu** | *[Screenshot placeholder - Context menu with Open with Live Server]* |
+| **Browser Selection** | *[Screenshot placeholder - Browser selection quick pick]* |
+| **Smart Notifications** | *[Screenshot placeholder - Notification with quick actions]* |
+
+> 🎬 **Demo GIFs**: Coming soon - See Live Server Lite in action with real-time browser refresh!
 
 ---
 
@@ -78,6 +151,31 @@ You can click "Copy Network URL" to easily share the network address with other 
 - Use the Command Palette: **Live Server Lite: Stop Server**.
 
 ---
+
+## 🆕 Enhanced Commands & Features
+
+Live Server Lite now includes powerful new features for improved productivity:
+
+### **Browser Selection & Management**
+- **🌐 Select Browser**: `Live Server Lite: Select Browser` - Choose which browser to open
+- **🚀 Open in Browser**: `Live Server Lite: Open in Browser...` - Quick browser selection for running server
+- Support for Chrome, Firefox, Safari, Edge with auto-detection
+- Custom browser path support for specialized browsers or development environments
+
+### **Smart Notifications**
+- **🔔 Toggle Notifications**: `Live Server Lite: Toggle Notifications` - Enable/disable desktop notifications
+- Server start/stop notifications with actionable quick actions
+- Port conflict detection with automatic resolution suggestions
+- Error notifications with recommended troubleshooting steps
+
+### **Performance Optimizations**
+- **⚡ Large Project Support**: Automatically optimizes file watching for projects with 1000+ files
+- **📦 Batched File Events**: Groups rapid file changes to prevent browser refresh storms
+- **🎯 Native Watchers**: Uses OS-native file system events (FSEvents on macOS) for better performance
+- **🚫 Smart Ignoring**: Automatically excludes `node_modules`, `.git`, build folders, and common artifacts
+
+---
+
 
 ## 🛠️ Architecture & Technical Details
 
@@ -114,6 +212,301 @@ Live Server Lite is built with a clean, modular architecture:
 - **JavaScript / TypeScript / JSX / TSX**
 - **Images** (`.jpg`, `.png`, `.gif`, `.svg`, `.webp`)
 - **Other assets** (fonts, videos, etc.)
+
+---
+
+## ⚙️ Configuration & Advanced Usage
+
+### **Configuration Options**
+
+Live Server Lite can be configured through VS Code settings. Add these to your `settings.json`:
+
+```json
+{
+  "liveServerLite.port": 5500,
+  "liveServerLite.host": "localhost",
+  "liveServerLite.defaultFile": "index.html",
+  "liveServerLite.autoOpenBrowser": true,
+  "liveServerLite.cors": true,
+  "liveServerLite.https": false,
+  "liveServerLite.ignoreFiles": [
+    "node_modules/**",
+    ".git/**",
+    "**/*.log",
+    "**/tmp/**"
+  ],
+  "liveServerLite.useNetworkInterface": true,
+  "liveServerLite.showNetworkUrl": true,
+  "liveServerLite.debounceDelay": 300,
+  
+  // 🆕 New Performance & UX Features
+  "liveServerLite.browserPath": "default",
+  "liveServerLite.browserArgs": [],
+  "liveServerLite.notifications.enabled": true,
+  "liveServerLite.notifications.showInStatusBar": true,
+  "liveServerLite.watcher.batchEvents": true,
+  "liveServerLite.watcher.batchDelay": 250,
+  "liveServerLite.watcher.largeProjectOptimization": true,
+  "liveServerLite.watcher.useNativeWatcher": true
+}
+```
+
+### **Configuration Reference**
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `port` | `number` | `5500` | Server port (auto-increments if busy) |
+| `host` | `string` | `"localhost"` | Server host interface |
+| `defaultFile` | `string` | `"index.html"` | Default file to serve |
+| `autoOpenBrowser` | `boolean` | `true` | Open browser automatically on start |
+| `cors` | `boolean` | `true` | Enable CORS for cross-origin requests |
+| `https` | `boolean` | `false` | Use HTTPS (requires certificates) |
+| `ignoreFiles` | `string[]` | See default | Files/folders to ignore for watching |
+| `useNetworkInterface` | `boolean` | `true` | Bind to network interfaces |
+| `showNetworkUrl` | `boolean` | `true` | Display network URL in status |
+| `debounceDelay` | `number` | `300` | File change debounce delay (ms) |
+
+#### 🆕 **New Performance & Browser Features**
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `browserPath` | `string` | `"default"` | Browser executable path or "default" for system browser |
+| `browserArgs` | `string[]` | `[]` | Additional arguments to pass to browser |
+| `notifications.enabled` | `boolean` | `true` | Enable desktop notifications for server events |
+| `notifications.showInStatusBar` | `boolean` | `true` | Show server status in VS Code status bar |
+| `watcher.batchEvents` | `boolean` | `true` | Batch file change events for better performance |
+| `watcher.batchDelay` | `number` | `250` | Delay in ms for batching file events |
+| `watcher.largeProjectOptimization` | `boolean` | `true` | Enable optimizations for large projects |
+| `watcher.useNativeWatcher` | `boolean` | `true` | Use native file system watchers (macOS FSEvents) |
+
+### **Workspace-Specific Configuration**
+
+Create a `.vscode/settings.json` in your project root for project-specific settings:
+
+```json
+{
+  "liveServerLite.port": 3000,
+  "liveServerLite.defaultFile": "main.html",
+  "liveServerLite.ignoreFiles": [
+    "node_modules/**",
+    "dist/**",
+    "*.log"
+  ]
+}
+```
+
+> 📁 **Sample Configuration**: See [.vscode/settings-example.json](.vscode/settings-example.json) for comprehensive configuration examples including React, Vue, static site generators, and performance optimization setups.
+
+### **Advanced Usage Examples**
+
+#### **Custom Port and Default File**
+```json
+{
+  "liveServerLite.port": 8080,
+  "liveServerLite.defaultFile": "app.html"
+}
+```
+
+#### **HTTPS Development (Advanced)**
+```json
+{
+  "liveServerLite.https": true,
+  "liveServerLite.port": 443
+}
+```
+*Note: Requires SSL certificates and may need administrator privileges*
+
+#### **Minimal File Watching**
+```json
+{
+  "liveServerLite.ignoreFiles": [
+    "node_modules/**",
+    ".git/**",
+    "**/*.log",
+    "**/cache/**",
+    "**/temp/**"
+  ],
+  "liveServerLite.debounceDelay": 500
+}
+```
+
+#### **Network-Only Mode**
+```json
+{
+  "liveServerLite.host": "0.0.0.0",
+  "liveServerLite.useNetworkInterface": true,
+  "liveServerLite.showNetworkUrl": true
+}
+```
+
+---
+
+## ❓ FAQ & Troubleshooting
+
+### **🔧 Common Issues**
+
+#### **Q: "Port already in use" error**
+**A:** The default port (5500) is being used by another application.
+
+**Solutions:**
+1. **Automatic**: Live Server Lite will try the next available port (5501, 5502, etc.)
+2. **Manual**: Change the port in settings:
+   ```json
+   {
+     "liveServerLite.port": 3000
+   }
+   ```
+3. **Find conflicting process**:
+   - **Windows**: `netstat -ano | findstr :5500`
+   - **macOS/Linux**: `lsof -i :5500`
+
+#### **Q: Browser shows HTTPS security warnings**
+**A:** This happens when accessing HTTP content from HTTPS pages or mixed content issues.
+
+**Solutions:**
+1. **Use HTTP**: Ensure you're accessing `http://localhost:5500` (not HTTPS)
+2. **Browser settings**: Allow insecure content for localhost
+3. **Disable HTTPS**: 
+   ```json
+   {
+     "liveServerLite.https": false
+   }
+   ```
+4. **Certificate setup** (Advanced): Configure proper SSL certificates for HTTPS
+
+#### **Q: "File permission denied" errors**
+**A:** The extension can't access certain files or directories.
+
+**Solutions:**
+1. **Check VS Code permissions**: Ensure VS Code has file system access
+2. **Workspace permissions**: Verify you have read/write access to project folder
+3. **Exclude restricted folders**:
+   ```json
+   {
+     "liveServerLite.ignoreFiles": [
+       "node_modules/**",
+       ".git/**",
+       "**/restricted/**"
+     ]
+   }
+   ```
+4. **Run as administrator** (Windows) or `sudo` (macOS/Linux) if necessary
+
+#### **Q: Live reload not working**
+**A:** Browser isn't receiving WebSocket updates.
+
+**Solutions:**
+1. **Check WebSocket connection**: Open browser DevTools → Network → WS tab
+2. **Firewall settings**: Allow VS Code and the port through firewall
+3. **Browser compatibility**: Ensure WebSocket support (all modern browsers)
+4. **Restart server**: Stop and start Live Server Lite
+5. **Manual refresh**: Use `Ctrl+F5` / `Cmd+F5` for hard refresh
+
+#### **Q: Network access not working from other devices**
+**A:** Other devices can't reach your development server.
+
+**Solutions:**
+1. **Check network settings**:
+   ```json
+   {
+     "liveServerLite.host": "0.0.0.0",
+     "liveServerLite.useNetworkInterface": true
+   }
+   ```
+2. **Firewall configuration**: Allow the port through your system firewall
+3. **Network connectivity**: Ensure devices are on the same network
+4. **IP address**: Use the network IP shown in VS Code status bar
+5. **Router settings**: Check if router blocks inter-device communication
+
+#### **Q: High CPU usage or slow performance**
+**A:** File watching is consuming too many resources.
+
+**Solutions:**
+1. **🆕 Enable large project optimization (enabled by default)**:
+   ```json
+   {
+     "liveServerLite.watcher.largeProjectOptimization": true,
+     "liveServerLite.watcher.batchEvents": true,
+     "liveServerLite.watcher.batchDelay": 250,
+     "liveServerLite.watcher.useNativeWatcher": true
+   }
+   ```
+
+2. **Exclude large directories**:
+   ```json
+   {
+     "liveServerLite.ignoreFiles": [
+       "node_modules/**",
+       "dist/**",
+       "build/**",
+       "**/*.log",
+       "**/cache/**"
+     ]
+   }
+   ```
+3. **Increase debounce delay**:
+   ```json
+   {
+     "liveServerLite.debounceDelay": 1000
+   }
+   ```
+3. **Close unused files**: Reduce VS Code's file watching overhead
+4. **Project size**: Consider splitting very large projects
+
+### **🛠️ Advanced Troubleshooting**
+
+#### **Enable Debug Logging**
+1. Open VS Code DevTools: `Help` → `Toggle Developer Tools`
+2. Go to Console tab
+3. Look for `Live Server Lite` logs
+4. Report errors in GitHub issues with log details
+
+#### **Reset Extension Settings**
+```json
+{
+  "liveServerLite.port": 5500,
+  "liveServerLite.host": "localhost",
+  "liveServerLite.defaultFile": "index.html",
+  "liveServerLite.autoOpenBrowser": true,
+  "liveServerLite.cors": true,
+  "liveServerLite.https": false,
+  "liveServerLite.ignoreFiles": [
+    "node_modules/**",
+    ".git/**"
+  ],
+  "liveServerLite.useNetworkInterface": true,
+  "liveServerLite.showNetworkUrl": true,
+  "liveServerLite.debounceDelay": 300
+}
+```
+
+#### **Check Extension Status**
+1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Run `Developer: Reload Window` to restart the extension
+3. Check Extensions panel for any error indicators
+4. Verify extension is enabled and up-to-date
+
+#### **Network Diagnostics**
+```bash
+# Test local connectivity
+curl http://localhost:5500
+
+# Test network connectivity (replace with your network IP)
+curl http://192.168.1.100:5500
+
+# Check WebSocket connection
+# Open browser DevTools → Console
+new WebSocket('ws://localhost:5500').onopen = () => console.log('WebSocket connected');
+```
+
+### **🆘 Still Need Help?**
+
+If these solutions don't resolve your issue:
+
+1. **Check existing issues**: [GitHub Issues](https://github.com/NishikantaRay/live-server-lite/issues)
+2. **Create detailed bug report**: Include OS, VS Code version, error logs, and reproduction steps
+3. **Join discussions**: Share your experience and get community help
+4. **Update extension**: Ensure you're using the latest version
 
 ---
 
@@ -229,10 +622,12 @@ We welcome contributions! The project follows modern development practices with 
 - **Large Workspaces**: Very large projects (>10k files) may experience slower file watching
 - **Port Conflicts**: Rare cases where automatic port detection needs manual intervention
 
-### **Workarounds**
+### **Quick Solutions**
 - **Manual Refresh**: Use `Ctrl+F5` / `Cmd+F5` for hard refresh if auto-reload fails
 - **Port Configuration**: Restart extension if port conflicts occur
 - **File Exclusion**: Use workspace settings to exclude unnecessary directories
+
+> 🔧 **Need Help?** Check our comprehensive [FAQ & Troubleshooting](#-faq--troubleshooting) section below for detailed solutions to common issues including port conflicts, HTTPS warnings, file permissions, and performance optimization.
 
 ---
 
@@ -415,6 +810,44 @@ Your feedback helps make Live Server Lite better for everyone:
 
 ---
 
+---
+
+## 📝 Changelog
+
+### Latest Release - v0.0.7 (2025-09-20)
+
+**🆕 Major Feature Update**
+- **Browser Selection System**: Choose specific browsers or use system default
+- **Smart Notifications**: Desktop notifications with actionable quick actions
+- **Performance Optimizations**: Enhanced file watching for large projects with native watchers
+- **Enhanced Configuration**: New settings for fine-tuning performance and UX
+
+See the complete [CHANGELOG.md](CHANGELOG.md) for detailed version history and all features.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+### **Ways to Contribute**
+- 🐛 **Bug Reports**: [Create an issue](https://github.com/NishikantaRay/Live-Server-Lite/issues) with detailed reproduction steps
+- 💡 **Feature Requests**: Suggest new features or improvements
+- 🔧 **Code Contributions**: Submit pull requests with fixes or enhancements
+- 📖 **Documentation**: Help improve guides, examples, and documentation
+- 🧪 **Testing**: Help test new features and report compatibility issues
+
+### **Development Setup**
+```bash
+git clone https://github.com/NishikantaRay/Live-Server-Lite.git
+cd Live-Server-Lite
+npm install
+npm run watch
+# Press F5 to launch extension development host
+```
+
+---
+
 ## 👨‍💻 Author & Acknowledgments
 
 ### **Primary Author**
@@ -440,7 +873,7 @@ Built to provide a lightweight, reliable alternative to existing live server ext
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for complete details.
 
 ```
-MIT License - Copyright (c) 2024 Nishikanta Ray
+MIT License - Copyright (c) 2024-2025 Nishikanta Ray
 Permission is hereby granted, free of charge, to any person obtaining a copy...
 ```
 

@@ -33,9 +33,12 @@ export interface MiddlewareConfig {
 export interface ServerOptions {
   autoOpen?: boolean;
   browser?: string;
+  browserPath?: string;
+  browserArgs?: string[];
   fallback?: string;
   logLevel?: 'silent' | 'info' | 'debug';
   watch?: boolean;
+  notifications?: boolean;
 }
 
 // Server Information Types
@@ -112,6 +115,10 @@ export interface WatcherOptions {
     pollInterval: number;
   };
   depth?: number;
+  batchEvents?: boolean;
+  batchDelay?: number;
+  useNativeWatcher?: boolean;
+  largeProjectOptimization?: boolean;
 }
 
 export interface FileChangeEvent {
@@ -232,6 +239,41 @@ export interface ValidationWarning {
   field: string;
   message: string;
   code: string;
+}
+
+// Notification Types
+export interface NotificationOptions {
+  enabled?: boolean;
+  showInStatusBar?: boolean;
+  modal?: boolean;
+}
+
+export interface NotificationAction {
+  label: string;
+  action: string;
+  isRecommended?: boolean;
+}
+
+export type NotificationSeverity = 'info' | 'warning' | 'error' | 'success';
+
+export interface NotificationManager {
+  initialize(options: NotificationOptions): void;
+  showServerStarted(port: number, url: string): Promise<string | undefined>;
+  showServerStopped(port: number): Promise<string | undefined>;
+  showPortInUse(port: number, suggestedPort?: number): Promise<string | undefined>;
+  showServerError(error: Error): Promise<string | undefined>;
+  showWatchingError(path: string, error: Error): Promise<string | undefined>;
+  showBrowserError(browserPath: string, error: Error): Promise<string | undefined>;
+  setEnabled(enabled: boolean): void;
+  isNotificationsEnabled(): boolean;
+}
+
+// Browser Configuration Types
+export interface BrowserConfig {
+  name: string;
+  command: string;
+  args: string[];
+  platforms: ('win32' | 'darwin' | 'linux')[];
 }
 
 // Logging Types

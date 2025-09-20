@@ -13,6 +13,8 @@ import {
   ServerOptions
 } from './types';
 import { FileWatcher } from './fileWatcher';
+import { NotificationManager } from './notificationManager';
+import { BrowserManager } from './browserManager';
 import { 
   generateUrls, 
   getRelativePath, 
@@ -25,9 +27,19 @@ import {
 export class ServerManager implements LiveServerManager {
   private state: ServerState = {};
   private fileWatcher: FileWatcher;
+  private notificationManager: NotificationManager;
+  private browserManager: BrowserManager;
 
   constructor() {
     this.fileWatcher = new FileWatcher();
+    this.notificationManager = new NotificationManager();
+    this.browserManager = new BrowserManager();
+    
+    // Initialize notifications with default options
+    this.notificationManager.initialize({ 
+      enabled: true, 
+      showInStatusBar: true 
+    });
   }
 
   /**
@@ -43,14 +55,47 @@ export class ServerManager implements LiveServerManager {
       await this.startServer(config);
       
       const serverInfo = this.getServerInfo();
-      
+      if (!serverInfo) {
+        throw new Error('Server info not available after starting');
+      }
+
+      // Show success notification and optionally open browser
+      const notificationAction = await this.notificationManager.showServerStarted(
+        serverInfo.port, 
+        serverInfo.localUrl
+      );
+
+      // Handle notification actions
+      if (notificationAction) {
+        await this.handleNotificationAction(notificationAction, serverInfo, options);
+      }
+
       return {
         success: true,
         message: 'Server started successfully',
-        data: serverInfo || undefined
+        data: serverInfo
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // Show error notification
+      if (error instanceof Error) {
+        if (errorMessage.includes('Port') && errorMessage.includes('is already in use')) {
+          const portMatch = errorMessage.match(/Port (\d+)/);
+          const port = portMatch ? parseInt(portMatch[1]) : 3000;
+          const suggestedPort = await this.findAvailablePort(port + 1);
+          
+          const action = await this.notificationManager.showPortInUse(port, suggestedPort);
+          if (action === 'tryDifferentPort' && suggestedPort) {
+            // Try starting with the suggested port
+            const newOptions = { ...options, port: suggestedPort };
+            return this.start(htmlUri, newOptions);
+          }
+        } else {
+          await this.notificationManager.showServerError(error);
+        }
+      }
+      
       throw new Error(`Failed to start server: ${errorMessage}`);
     }
   }
@@ -220,9 +265,15 @@ export class ServerManager implements LiveServerManager {
       });
     });
 
-    // Start file watcher
-    this.fileWatcher.start(config.root, config.ignored);
-    this.fileWatcher.onFileChange((event) => {
+    // Start file watcher with optimized settings for large projects
+    const watcherOptions = {
+      batchEvents: true,
+      batchDelay: 250,
+      useNativeWatcher: true,
+      largeProjectOptimization: true
+    };
+    this.fileWatcher.start(config.root, config.ignored, watcherOptions);
+    this.fileWatcher.onChange((event) => {
       console.log(`File changed: ${event.path}`);
       this.broadcastReload();
     });
@@ -269,6 +320,8 @@ export class ServerManager implements LiveServerManager {
    * Clean up server resources
    */
   private cleanup(): void {
+    const port = this.state.config?.port || 0;
+    
     this.fileWatcher.stop();
     
     if (this.state.webSocketServer) {
@@ -278,6 +331,86 @@ export class ServerManager implements LiveServerManager {
     
     this.state.server = undefined;
     this.state.config = undefined;
+    this.state.startTime = undefined;
+    this.state.connections?.clear();
+    this.state.connections = undefined;
+
+    // Show stopped notification
+    if (port > 0) {
+      this.notificationManager.showServerStopped(port);
+    }
+  }
+
+  /**
+   * Handle notification actions from user interaction
+   */
+  private async handleNotificationAction(
+    action: string, 
+    serverInfo: ServerInfo, 
+    options?: ServerOptions
+  ): Promise<void> {
+    try {
+      switch (action) {
+        case 'openBrowser':
+          await this.browserManager.openBrowser(
+            serverInfo.localUrl, 
+            options?.browserPath, 
+            options?.browserArgs
+          );
+          break;
+        case 'copyUrl':
+          await vscode.env.clipboard.writeText(serverInfo.localUrl);
+          vscode.window.showInformationMessage('URL copied to clipboard');
+          break;
+        case 'showStatusBar':
+          // This would be handled by the status bar manager
+          break;
+        case 'restart':
+          await this.restart();
+          break;
+        case 'tryDifferentPort':
+          // This is handled in the start method
+          break;
+        default:
+          console.log(`Unhandled notification action: ${action}`);
+      }
+    } catch (error) {
+      console.error('Error handling notification action:', error);
+      if (error instanceof Error) {
+        await this.notificationManager.showServerError(error);
+      }
+    }
+  }
+
+  /**
+   * Find an available port starting from the given port number
+   */
+  private async findAvailablePort(startPort: number, maxAttempts = 10): Promise<number | undefined> {
+    for (let port = startPort; port < startPort + maxAttempts; port++) {
+      if (await this.isPortAvailable(port)) {
+        return port;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Check if a port is available
+   */
+  private async isPortAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = http.createServer();
+      
+      server.on('error', () => {
+        resolve(false);
+      });
+      
+      server.listen(port, () => {
+        server.close(() => {
+          resolve(true);
+        });
+      });
+    });
   }
 
   /**
