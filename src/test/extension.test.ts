@@ -11,6 +11,10 @@ import './fileWatcher.test';
 import './serverManager.test';
 import './integration.test';
 import './edgeCases.test';
+import './ideCompatibility.test';
+import './apiVersionCompatibility.test';
+import './marketplaceCompatibility.test';
+import './crossPlatformCompatibility.test';
 
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
