@@ -1,7 +1,8 @@
-# Live Server Lite
+# Live Server Lite - Auto Reload & Static Server
 
-[![Version](https://img.shields.io/badge/version-1.0.1-brightgreen.svg)](https://github.com/NishikantaRay/Live-Server-Lite/releases)
-[![VS Code](https://img.shields.io/badge/VS%20Code-1.104.0+-green.svg)](https://code.visualstudio.com/)
+[![Version](https://img.shields.io/badge/version-1.0.3-brightgreen.svg)](https://github.com/NishikantaRay/Live-Server-Lite/releases)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.74.0+-green.svg)](https://code.visualstudio.com/)
+[![Cursor](https://img.shields.io/badge/Cursor-compatible-blue.svg)](https://cursor.sh/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)](https://www.typescriptlang.org/)
 [![HTTPS Support](https://img.shields.io/badge/HTTPS-supported-green.svg)](#-https-development-server)
@@ -9,13 +10,53 @@
 [![Downloads](https://img.shields.io/badge/downloads-1K+-orange.svg)](https://marketplace.visualstudio.com/items?itemName=nishikanta12.live-server-lite)
 [![Rating](https://img.shields.io/badge/rating-5%E2%AD%90-yellow.svg)](https://marketplace.visualstudio.com/items?itemName=nishikanta12.live-server-lite)
 
-A **powerful and lightweight Visual Studio Code extension** that provides instant live preview of your web projects with automatic browser refresh on file changes. Built with modern architecture, comprehensive TypeScript interfaces, and extensive testing for maximum reliability.
+**Live Server VS Code extension** - Launch a local development server with live reload functionality for static & dynamic content. Perfect for **HTML, CSS, JavaScript development** with **auto refresh**, **HTTPS support**, and **cross-device testing**.
 
-> 🎯 **Perfect for**: HTML/CSS/JS development, static sites, single-page applications, and rapid prototyping
+> 🚀 **Most Popular Features**: Auto reload on file changes, HTTPS development server, multi-browser support, network access for mobile testing
 > 
-> ⚡ **Performance**: Optimized for projects with 1000+ files using native file watchers and smart ignoring
+> ⚡ **Perfect for**: Frontend development, static sites, React/Vue/Angular SPAs, API testing, and web app prototyping
 >
-> � **Production Ready**: v1.0.0 stable release with full HTTPS support, certificate management, and cross-platform compatibility.
+> 🔒 **Production Ready**: v1.0.3 stable release with complete HTTPS support, SSL certificate management, and professional-grade architecture.
+>
+> 🖥️ **Wide Compatibility**: Works with VS Code 1.74.0+ and Cursor IDE - perfect for any development environment!
+
+---
+
+## 🎬 Marketplace Demo & Screenshots
+
+### **🚀 One-Click Live Server Launch**
+*Right-click any HTML file → "Open with Live Server" → Instant live preview with auto-reload*
+
+```
+📁 my-project/
+├── 📄 index.html      ← Right-click here!  
+├── 🎨 styles.css      ← Auto-reloads when you save
+└── ⚡ script.js       ← Live updates in browser
+```
+
+### **🎯 What Users Love Most**
+
+| **Feature** | **Why It's Amazing** |
+|-------------|---------------------|
+| 🎯 **One-Click Setup** | Right-click HTML file → "Open with Live Server" → Done! |
+| ⚡ **Instant Reload** | Save any file → Browser refreshes automatically |
+| 🔒 **HTTPS Ready** | Test PWAs, service workers, secure contexts |
+| 📱 **Mobile Testing** | Access `http://your-ip:5500` from phones/tablets |
+| 🌐 **Multi-Browser** | Choose Chrome, Firefox, Safari, Edge automatically |
+| ⚙️ **Zero Config** | Works out-of-the-box with intelligent defaults |
+
+### **📸 See It In Action**
+**Common Search Terms This Extension Handles:**
+- "live server vscode" ✅
+- "auto reload html" ✅  
+- "localhost development server" ✅
+- "https local server" ✅
+- "live preview vscode" ✅
+- "browser sync vscode" ✅
+- "static server extension" ✅
+- "livereload extension" ✅
+
+---
 
 ## 📑 Table of Contents
 
@@ -82,19 +123,28 @@ A **powerful and lightweight Visual Studio Code extension** that provides instan
 
 ## 📦 Installation
 
-### From VS Code Marketplace (Recommended)
+### From Extensions Marketplace (Recommended)
 
-1. Open VS Code.
-2. Go to **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`).
-3. Search for **Live Server Lite**.
-4. Click **Install**.
+**For VS Code:**
+1. Open VS Code
+2. Go to **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Search for **"Live Server - Auto Reload & Static Server"**
+4. Click **Install**
 
-### From VSIX File
+**For Cursor IDE:**
+1. Open Cursor
+2. Go to **Extensions** (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Search for **"Live Server - Auto Reload & Static Server"**
+4. Click **Install** and reload if prompted
 
-1. Download the latest `.vsix` file from the [releases](https://github.com/NishikantaRay/Live-Server-Lite/releases) (current: v1.0.0).
-2. In VS Code, press `Ctrl+Shift+P` / `Cmd+Shift+P`.
-3. Type **Install from VSIX**.
-4. Select the downloaded `.vsix` file.
+### From VSIX File (Universal)
+
+1. Download the latest `.vsix` file from the [releases](https://github.com/NishikantaRay/Live-Server-Lite/releases) (current: v1.0.3)
+2. In VS Code/Cursor, press `Ctrl+Shift+P` / `Cmd+Shift+P`
+3. Type **"Extensions: Install from VSIX..."**
+4. Select the downloaded `.vsix` file
+
+> 🎯 **Cursor Users**: See the [Cursor Compatibility Guide](CURSOR_COMPATIBILITY.md) for detailed setup instructions and AI-powered development tips!
 
 ---
 
@@ -1119,9 +1169,10 @@ Live Server Lite: Toggle Notifications     # Enable/disable alerts
 
 ---
 
-## �📋 System Requirements
+## 📋 System Requirements
 
-- **Visual Studio Code** ^1.104.0 or higher
+- **Visual Studio Code** ^1.74.0 or higher
+- **Cursor IDE** Compatible with version 1.99.3+
 - **Node.js** runtime environment (for development and testing)
 - **Active workspace** or folder opened in VS Code
 - **Network access** for WebSocket communication
@@ -1152,9 +1203,26 @@ Live Server Lite: Toggle Notifications     # Enable/disable alerts
 
 ## 📝 Changelog & Release Notes
 
-### **v1.0.0 (Current - Stable Release) 🎉**
+### **v1.0.3 (Current - Enhanced Compatibility) 🎉**
 
-#### � **Major Milestone: First Stable Release**
+#### 🖥️ **Enhanced Editor Support**
+- **✅ Cursor IDE Compatibility**: Full support for Cursor v1.99.3+ with AI-powered development workflows
+- **✅ VS Code Range Extended**: Now supports VS Code 1.74.0+ (previously 1.104.0+)
+- **✅ Display Name Updated**: "Live Server Lite - Auto Reload & Static Server" for better marketplace visibility
+- **✅ Universal Installation**: Works seamlessly across VS Code ecosystem (VS Code, Cursor, VS Codium, Code-OSS)
+
+#### 🤖 **AI Development Integration**
+- **Perfect for Cursor AI**: Generate code with AI → Instant live preview with auto-reload
+- **Enhanced Workflows**: AI suggestions + live testing = rapid prototyping
+- **Documentation Added**: Comprehensive [Cursor Compatibility Guide](CURSOR_COMPATIBILITY.md)
+
+### **v1.0.2 (Cursor Compatibility Update)**
+- **🔧 Engine Requirements**: Lowered VS Code requirement from ^1.104.0 to ^1.74.0
+- **📚 Documentation**: Added Cursor IDE compatibility guides and troubleshooting
+
+### **v1.0.1 (Previous Stable Release)**
+
+#### 🔒 **Major Milestone: First Stable Release**
 - **🎯 Production Ready**: Core functionality thoroughly tested and validated
 - **📊 Test Suite**: 107/149 tests passing with all critical functionality verified
 - **✅ HTTPS Platform**: Complete SSL/TLS implementation with proper certificate generation
@@ -1251,7 +1319,7 @@ Live Server Lite: Toggle Notifications     # Enable/disable alerts
 - **Express.js**: `^5.1.0` - HTTP server and static file serving
 - **WebSocket (ws)**: `^8.18.3` - Real-time communication for live reload
 - **Chokidar**: `^4.0.3` - Efficient file system watching
-- **VS Code API**: `^1.104.0` - Extension framework integration
+- **VS Code API**: `^1.74.0` - Extension framework integration
 
 ### **Development Dependencies**
 - **TypeScript**: `^5.6.3` - Type-safe development
