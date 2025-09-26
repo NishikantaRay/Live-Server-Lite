@@ -13,6 +13,12 @@ export class BrowserManager {
       platforms: ['win32', 'darwin', 'linux']
     },
     {
+      name: 'Brave',
+      command: this.getBraveCommand(),
+      args: ['--new-tab'],
+      platforms: ['win32', 'darwin', 'linux']
+    },
+    {
       name: 'Firefox',
       command: this.getFirefoxCommand(),
       args: ['-new-tab'],
@@ -208,6 +214,24 @@ export class BrowserManager {
         resolve(false);
       }
     });
+  }
+
+  /**
+   * Get Brave command for the current platform
+   */
+  private getBraveCommand(): string {
+    const platform = os.platform();
+    switch (platform) {
+      case 'darwin':
+        return '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
+      case 'win32':
+        return path.join(
+          process.env['PROGRAMFILES'] || 'C:\\Program Files',
+          'BraveSoftware\\Brave-Browser\\Application\\brave.exe'
+        );
+      default: // linux
+        return 'brave-browser';
+    }
   }
 
   /**

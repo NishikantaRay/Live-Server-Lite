@@ -201,10 +201,8 @@ export class NotificationManager implements INotificationManager {
     context: Record<string, string> = {}
   ): Promise<string | undefined> {
     
-    // Prepare action labels for VS Code
-    const actionLabels = actions.map(action => {
-      return action.isRecommended ? `$(check) ${action.label}` : action.label;
-    });
+    // Prepare action labels for VS Code - don't add check marks
+    const actionLabels = actions.map(action => action.label);
 
     let result: string | undefined;
 
@@ -226,10 +224,7 @@ export class NotificationManager implements INotificationManager {
 
       // Find the selected action and return its action identifier
       if (result) {
-        const cleanResult = result.replace('$(check) ', '');
-        const selectedAction = actions.find(action => 
-          action.label === cleanResult || `$(check) ${action.label}` === result
-        );
+        const selectedAction = actions.find(action => action.label === result);
         
         if (selectedAction) {
           console.log(`Notification action selected: ${selectedAction.action}`, context);

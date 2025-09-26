@@ -66,16 +66,12 @@ export class ServerManager implements LiveServerManager {
         throw new Error('Server info not available after starting');
       }
 
-      // Show success notification and optionally open browser
-      const notificationAction = await this.notificationManager.showServerStarted(
+      // Show success notification but don't handle actions automatically
+      // The extension.ts will handle browser opening based on user selection
+      await this.notificationManager.showServerStarted(
         serverInfo.port, 
         serverInfo.localUrl
       );
-
-      // Handle notification actions
-      if (notificationAction) {
-        await this.handleNotificationAction(notificationAction, serverInfo, options);
-      }
 
       return {
         success: true,

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Server Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .test-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Live Server Lite Test Page</h1>
+        <div class="status">
+            ✅ Server is running successfully!
+        </div>
+        <div class="test-info">
+            <h3>Test Instructions:</h3>
+            <ol>
+                <li>Right-click this file and select "Open with Live Server"</li>
+                <li>Check if the notification shows clean "Open Browser" text (not "$(check) Open Browser")</li>
+                <li>Click "Open Browser" once and verify it opens in your default/configured browser</li>
+                <li>Close the browser tab and check if it doesn't automatically open again</li>
+                <li>Use status bar to stop the server</li>
+            </ol>
+        </div>
+        <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+    </div>
+
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>

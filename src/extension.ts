@@ -95,19 +95,18 @@ async function startLiveServer(htmlUri?: vscode.Uri): Promise<void> {
     // Show success message with options
     const selection = await vscode.window.showInformationMessage(
       `Live Server running at:\n• Local: ${serverInfo.localUrl}\n• Network: ${serverInfo.networkUrl}`,
-      'Open Local', 
+      'Open Browser', 
       'Copy Network URL'
     );
 
-    if (selection === 'Open Local') {
+    if (selection === 'Open Browser') {
       await vscode.env.openExternal(vscode.Uri.parse(serverInfo.localUrl));
     } else if (selection === 'Copy Network URL') {
       await vscode.env.clipboard.writeText(serverInfo.networkUrl);
       vscode.window.showInformationMessage('Network URL copied to clipboard!');
     }
 
-    // Also open local URL by default
-    await vscode.env.openExternal(vscode.Uri.parse(serverInfo.localUrl));
+    // Don't automatically open browser - only open when user explicitly selects "Open Browser"
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

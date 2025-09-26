@@ -3,7 +3,7 @@
   "publisher": "Nishikanta12",
   "name": "live-server-lite",
   "description": "Live Server VS Code extension with auto reload, HTTPS support, static web server for HTML/CSS/JS development and testing",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.74.0"
