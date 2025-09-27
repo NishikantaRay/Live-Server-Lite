@@ -55,7 +55,7 @@ suite('Marketplace Compatibility Tests', () => {
       name: 'VS Code Marketplace - Version',
       requirement: 'Must follow semantic versioning',
       check: (pkg) => {
-        if (!pkg.version) return false;
+        if (!pkg.version) {return false;}
         return /^\d+\.\d+\.\d+(-[\w.-]+)?(\+[\w.-]+)?$/.test(pkg.version);
       },
       severity: 'error'
@@ -64,7 +64,7 @@ suite('Marketplace Compatibility Tests', () => {
       name: 'VS Code Marketplace - Icon',
       requirement: 'Should have an icon (128x128 recommended)',
       check: (pkg, files) => {
-        if (!pkg.icon) return 'No icon specified';
+        if (!pkg.icon) {return 'No icon specified';}
         const iconExists = files.some(file => file.includes(pkg.icon));
         return iconExists || 'Icon file not found';
       },
@@ -114,7 +114,7 @@ suite('Marketplace Compatibility Tests', () => {
       name: 'Extension - Main Entry Point',
       requirement: 'Must specify main entry point',
       check: (pkg, files) => {
-        if (!pkg.main) return false;
+        if (!pkg.main) {return false;}
         const mainExists = files.some(file => file.endsWith(pkg.main.replace('./dist/', '/dist/')));
         return mainExists;
       },
@@ -250,7 +250,7 @@ suite('Marketplace Compatibility Tests', () => {
         {
           name: 'No dangerous activation events',
           check: () => {
-            if (!packageJson.activationEvents) return true;
+            if (!packageJson.activationEvents) {return true;}
             const dangerous = packageJson.activationEvents.filter((event: string) => 
               event.includes('*') && event !== '*'
             );
@@ -260,7 +260,7 @@ suite('Marketplace Compatibility Tests', () => {
         {
           name: 'No overly broad file associations',
           check: () => {
-            if (!packageJson.contributes?.languages) return true;
+            if (!packageJson.contributes?.languages) {return true;}
             // Check if language contributions are reasonable
             return true; // Simplified check
           }

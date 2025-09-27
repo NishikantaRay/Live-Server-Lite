@@ -3,7 +3,7 @@
   "publisher": "Nishikanta12",
   "name": "live-server-lite",
   "description": "Live Server VS Code extension with auto reload, HTTPS support, static web server for HTML/CSS/JS development and testing",
-  "version": "1.0.4",
+  "version": "1.1.2",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.74.0"
@@ -105,6 +105,16 @@
       {
         "command": "liveServerLite.generateCertificate",
         "title": "Generate SSL Certificate",
+        "category": "Live Server"
+      },
+      {
+        "command": "liveServerLite.showPerformanceReport",
+        "title": "Show Performance Report",
+        "category": "Live Server"
+      },
+      {
+        "command": "liveServerLite.createSampleProject",
+        "title": "Create Sample HTML",
         "category": "Live Server"
       },
       {
@@ -237,6 +247,26 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically open browser when server starts"
+        },
+        "liveServerLite.performance.monitoring": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable performance monitoring and analytics"
+        },
+        "liveServerLite.performance.memoryThreshold": {
+          "type": "number",
+          "default": 500,
+          "description": "Memory usage threshold in MB before showing warnings (set higher to reduce notifications)"
+        },
+        "liveServerLite.welcome.showOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show welcome guide for first-time users"
+        },
+        "liveServerLite.errorReporting.enhanced": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use enhanced error reporting with actionable solutions"
         }
       }
     }

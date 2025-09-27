@@ -35,6 +35,7 @@ export class ServerManager implements LiveServerManager {
   private notificationManager: NotificationManager;
   private browserManager: BrowserManager;
   private certificateManager: CertificateManager;
+  private performanceMonitor?: any; // Will be injected
 
   constructor() {
     this.fileWatcher = new FileWatcher();
@@ -47,6 +48,13 @@ export class ServerManager implements LiveServerManager {
       enabled: true, 
       showInStatusBar: true 
     });
+  }
+
+  /**
+   * Set performance monitor reference for server state notifications
+   */
+  setPerformanceMonitor(monitor: any): void {
+    this.performanceMonitor = monitor;
   }
 
   /**
@@ -67,11 +75,21 @@ export class ServerManager implements LiveServerManager {
       }
 
       // Show success notification but don't handle actions automatically
-      // The extension.ts will handle browser opening based on user selection
-      await this.notificationManager.showServerStarted(
+      // Show success notification and handle user action
+      const action = await this.notificationManager.showServerStarted(
         serverInfo.port, 
         serverInfo.localUrl
       );
+
+      // Handle user's choice from notification
+      if (action) {
+        await this.handleNotificationAction(action, serverInfo, options);
+      }
+
+      // Notify performance monitor that server started
+      if (this.performanceMonitor) {
+        this.performanceMonitor.onServerStart();
+      }
 
       return {
         success: true,
@@ -109,44 +127,48 @@ export class ServerManager implements LiveServerManager {
   async stop(): Promise<ServerResponse> {
     if (!this.state.server) {
       return {
-        success: true,
+        success: false,
         message: 'Server is not running'
       };
     }
 
-    return new Promise((resolve) => {
-      if (!this.state.server) {
-        resolve({
-          success: true,
-          message: 'Server is not running'
-        });
-        return;
+    try {
+      // Stop file watcher first
+      this.fileWatcher.stop();
+
+      // Close WebSocket server
+      if (this.state.webSocketServer) {
+        this.state.webSocketServer.close();
+        this.state.webSocketServer = undefined;
       }
 
-      let resolved = false;
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          this.cleanup();
-          resolve({
-            success: true,
-            message: 'Server stopped (timeout reached)'
-          });
-        }
-      }, 3000);
-
-      this.state.server.close(() => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          this.cleanup();
+      // Close HTTP/HTTPS server
+      return new Promise<ServerResponse>((resolve) => {
+        const currentPort = this.state.config?.port || 0;
+        this.state.server!.close(() => {
+          this.state = {};
+          
+          // Notify performance monitor that server stopped
+          if (this.performanceMonitor) {
+            this.performanceMonitor.onServerStop();
+          }
+          
+          // Show stop notification
+          this.notificationManager.showServerStopped(currentPort);
+          
           resolve({
             success: true,
             message: 'Server stopped successfully'
           });
-        }
+        });
       });
-    });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return {
+        success: false,
+        message: `Failed to stop server: ${errorMessage}`
+      };
+    }
   }
 
   /**
@@ -467,7 +489,7 @@ export class ServerManager implements LiveServerManager {
           break;
         case 'copyUrl':
           await vscode.env.clipboard.writeText(serverInfo.localUrl);
-          vscode.window.showInformationMessage('URL copied to clipboard');
+          vscode.window.showInformationMessage('📋 URL copied to clipboard!');
           break;
         case 'showStatusBar':
           // This would be handled by the status bar manager

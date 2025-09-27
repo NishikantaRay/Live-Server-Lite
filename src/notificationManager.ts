@@ -19,57 +19,57 @@ export class NotificationManager implements INotificationManager {
   }
 
   /**
-   * Show server started notification
+   * Show server started notification with enhanced UI
    */
   async showServerStarted(port: number, url: string): Promise<string | undefined> {
     if (!this.isEnabled) {
       return;
     }
 
-    const message = `Live Server started on port ${port}`;
+    const message = `🚀 Live Server started successfully on port ${port}`;
     const actions: NotificationAction[] = [
-      { label: 'Open Browser', action: 'openBrowser', isRecommended: true },
-      { label: 'Copy URL', action: 'copyUrl', isRecommended: false },
-      { label: 'Show in Status Bar', action: 'showStatusBar', isRecommended: false }
+      { label: '🌐 Open Browser', action: 'openBrowser', isRecommended: true },
+      { label: '📋 Copy URL', action: 'copyUrl', isRecommended: false },
+      { label: '📊 View Status', action: 'showStatusBar', isRecommended: false }
     ];
 
     return this.showNotification(message, 'info', actions, { url, port: port.toString() });
   }
 
   /**
-   * Show server stopped notification
+   * Show server stopped notification with enhanced UI
    */
   async showServerStopped(port: number): Promise<string | undefined> {
     if (!this.isEnabled) {
       return;
     }
 
-    const message = `Live Server stopped (was on port ${port})`;
+    const message = `🛑 Live Server stopped (was on port ${port})`;
     const actions: NotificationAction[] = [
-      { label: 'Restart', action: 'restart', isRecommended: true },
-      { label: 'Start on Different Port', action: 'startDifferentPort', isRecommended: false }
+      { label: '🔄 Restart', action: 'restart', isRecommended: true },
+      { label: '🎯 Different Port', action: 'startDifferentPort', isRecommended: false }
     ];
 
     return this.showNotification(message, 'info', actions, { port: port.toString() });
   }
 
   /**
-   * Show port in use error notification
+   * Show port in use error notification with enhanced UI
    */
   async showPortInUse(port: number, suggestedPort?: number): Promise<string | undefined> {
     if (!this.isEnabled) {
       return;
     }
 
-    const message = `Port ${port} is already in use`;
+    const message = `⚠️ Port ${port} is already in use`;
     const actions: NotificationAction[] = [
       { 
-        label: suggestedPort ? `Try Port ${suggestedPort}` : 'Try Random Port', 
+        label: suggestedPort ? `✨ Try Port ${suggestedPort}` : '🎲 Try Random Port', 
         action: 'tryDifferentPort', 
         isRecommended: true 
       },
-      { label: 'Stop Other Server', action: 'stopOtherServer', isRecommended: false },
-      { label: 'Show Running Processes', action: 'showProcesses', isRecommended: false }
+      { label: '🛑 Stop Other Server', action: 'stopOtherServer', isRecommended: false },
+      { label: '📋 Show Processes', action: 'showProcesses', isRecommended: false }
     ];
 
     const context = { 
@@ -81,18 +81,18 @@ export class NotificationManager implements INotificationManager {
   }
 
   /**
-   * Show server error notification
+   * Show server error notification with enhanced UI
    */
   async showServerError(error: Error): Promise<string | undefined> {
     if (!this.isEnabled) {
       return;
     }
 
-    const message = `Live Server error: ${error.message}`;
+    const message = `❌ Live Server error: ${error.message}`;
     const actions: NotificationAction[] = [
-      { label: 'Restart Server', action: 'restart', isRecommended: true },
-      { label: 'Check Logs', action: 'checkLogs', isRecommended: false },
-      { label: 'Report Issue', action: 'reportIssue', isRecommended: false }
+      { label: '🔄 Restart Server', action: 'restart', isRecommended: true },
+      { label: '📝 Check Logs', action: 'checkLogs', isRecommended: false },
+      { label: '🐛 Report Issue', action: 'reportIssue', isRecommended: false }
     ];
 
     return this.showNotification(message, 'error', actions, { error: error.message });

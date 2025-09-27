@@ -1,17 +1,32 @@
 import * as vscode from 'vscode';
 import { ServerManager } from './serverManager';
 import { StatusBar } from './statusBar';
+import { PerformanceMonitor } from './performanceMonitor';
+import { ErrorManager } from './errorManager';
 
 let serverManager: ServerManager;
 let statusBar: StatusBar;
+let performanceMonitor: PerformanceMonitor;
+let errorManager: ErrorManager;
 
 export function activate(context: vscode.ExtensionContext) {
   // Initialize managers
   serverManager = new ServerManager();
   statusBar = new StatusBar();
+  performanceMonitor = new PerformanceMonitor();
+  errorManager = ErrorManager.getInstance();
+  
+  // Connect performance monitor to server manager
+  serverManager.setPerformanceMonitor(performanceMonitor);
   
   // Create and show status bar
   statusBar.create();
+
+  // Show welcome experience for first-time users
+  showWelcomeExperienceIfNeeded(context);
+
+  // Record extension startup time
+  performanceMonitor.recordExtensionStartup();
 
   // Register commands
   const startDisposable = vscode.commands.registerCommand('liveServerLite.start', async () => {
@@ -50,6 +65,14 @@ export function activate(context: vscode.ExtensionContext) {
     await generateCertificate();
   });
 
+  const showPerformanceReportDisposable = vscode.commands.registerCommand('liveServerLite.showPerformanceReport', async () => {
+    await performanceMonitor.showReport();
+  });
+
+  const createSampleProjectDisposable = vscode.commands.registerCommand('liveServerLite.createSampleProject', async () => {
+    await createSampleHTML();
+  });
+
   // Add to subscriptions
   context.subscriptions.push(
     startDisposable, 
@@ -61,16 +84,40 @@ export function activate(context: vscode.ExtensionContext) {
     startHttpsDisposable,
     toggleHttpsDisposable,
     generateCertificateDisposable,
+    showPerformanceReportDisposable,
+    createSampleProjectDisposable,
     statusBar.getItem(),
-    { dispose: () => serverManager.dispose() }
+    { dispose: () => serverManager.dispose() },
+    { dispose: () => performanceMonitor.dispose() }
   );
 }
 
 async function startLiveServer(htmlUri?: vscode.Uri): Promise<void> {
   try {
     if (serverManager.isRunning()) {
-      vscode.window.showInformationMessage('Server is already running.');
-      return;
+      const currentServerInfo = serverManager.getServerInfo();
+      if (currentServerInfo) {
+        const selection = await vscode.window.showInformationMessage(
+          `Live Server is already running at ${currentServerInfo.localUrl}`,
+          'Open Browser',
+          'Stop & Restart',
+          'View Status'
+        );
+        
+        if (selection === 'Open Browser') {
+          await vscode.env.openExternal(vscode.Uri.parse(currentServerInfo.localUrl));
+        } else if (selection === 'Stop & Restart') {
+          await serverManager.stop();
+          // Continue with start process below
+        } else if (selection === 'View Status') {
+          vscode.commands.executeCommand('liveServerLite.showServerInfo');
+          return;
+        } else {
+          return;
+        }
+      } else {
+        return;
+      }
     }
 
     const response = await serverManager.start(htmlUri);
@@ -92,25 +139,19 @@ async function startLiveServer(htmlUri?: vscode.Uri): Promise<void> {
     // Update status bar
     statusBar.updateToRunning(serverInfo);
 
-    // Show success message with options
-    const selection = await vscode.window.showInformationMessage(
-      `Live Server running at:\n• Local: ${serverInfo.localUrl}\n• Network: ${serverInfo.networkUrl}`,
-      'Open Browser', 
-      'Copy Network URL'
-    );
-
-    if (selection === 'Open Browser') {
-      await vscode.env.openExternal(vscode.Uri.parse(serverInfo.localUrl));
-    } else if (selection === 'Copy Network URL') {
-      await vscode.env.clipboard.writeText(serverInfo.networkUrl);
-      vscode.window.showInformationMessage('Network URL copied to clipboard!');
-    }
-
-    // Don't automatically open browser - only open when user explicitly selects "Open Browser"
+    // The notificationManager in serverManager already handles user notifications
+    // No need for duplicate notifications here
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    vscode.window.showErrorMessage(`Failed to start Live Server: ${errorMessage}`);
+    
+    // Use enhanced error handling
+    await errorManager.handleError(error instanceof Error ? error : errorMessage, {
+      operation: 'Start Live Server',
+      component: 'Extension',
+      severity: 'high'
+    });
+    
     statusBar.updateToError({
       code: 'EXTENSION_ERROR',
       message: errorMessage,
@@ -122,7 +163,17 @@ async function startLiveServer(htmlUri?: vscode.Uri): Promise<void> {
 async function stopLiveServer(): Promise<void> {
   try {
     if (!serverManager.isRunning()) {
-      vscode.window.showInformationMessage('No server is currently running.');
+      const selection = await vscode.window.showInformationMessage(
+        'No Live Server is currently running.',
+        'Start Server',
+        'View Status'
+      );
+      
+      if (selection === 'Start Server') {
+        vscode.commands.executeCommand('liveServerLite.start');
+      } else if (selection === 'View Status') {
+        vscode.commands.executeCommand('liveServerLite.showServerInfo');
+      }
       return;
     }
 
@@ -281,8 +332,29 @@ async function openBrowserSelection(): Promise<void> {
 async function startHttpsServer(htmlUri?: vscode.Uri): Promise<void> {
   try {
     if (serverManager.isRunning()) {
-      vscode.window.showInformationMessage('Server is already running.');
-      return;
+      const currentServerInfo = serverManager.getServerInfo();
+      if (currentServerInfo) {
+        const selection = await vscode.window.showInformationMessage(
+          `Live Server is already running at ${currentServerInfo.localUrl}`,
+          'Open Browser',
+          'Stop & Start HTTPS',
+          'View Status'
+        );
+        
+        if (selection === 'Open Browser') {
+          await vscode.env.openExternal(vscode.Uri.parse(currentServerInfo.localUrl));
+        } else if (selection === 'Stop & Start HTTPS') {
+          await serverManager.stop();
+          // Continue with HTTPS start process below
+        } else if (selection === 'View Status') {
+          vscode.commands.executeCommand('liveServerLite.showServerInfo');
+          return;
+        } else {
+          return;
+        }
+      } else {
+        return;
+      }
     }
 
     const config = vscode.workspace.getConfiguration('liveServerLite');
@@ -446,6 +518,123 @@ async function generateCertificate(): Promise<void> {
   }
 }
 
+/**
+ * Show welcome experience for first-time users
+ */
+async function showWelcomeExperienceIfNeeded(context: vscode.ExtensionContext): Promise<void> {
+  const hasSeenWelcome = context.globalState.get('liveServerLite.hasSeenWelcome', false);
+  
+  if (!hasSeenWelcome) {
+    const selection = await vscode.window.showInformationMessage(
+      '🚀 Welcome to Live Server Lite! Get started with live reloading for your web development.',
+      'Quick Start Guide',
+      'Open Sample HTML',
+      'Configure Settings',
+      'Don\'t Show Again'
+    );
+
+    switch (selection) {
+      case 'Quick Start Guide':
+        await showQuickStartGuide();
+        break;
+      case 'Open Sample HTML':
+        await createSampleHTML();
+        break;
+      case 'Configure Settings':
+        await vscode.commands.executeCommand('workbench.action.openSettings', 'liveServerLite');
+        break;
+    }
+
+    if (selection && selection !== 'Don\'t Show Again') {
+      // Mark as seen but allow showing again if they didn't dismiss
+      await context.globalState.update('liveServerLite.hasSeenWelcome', false);
+    } else if (selection === 'Don\'t Show Again') {
+      await context.globalState.update('liveServerLite.hasSeenWelcome', true);
+    }
+  }
+}
+
+/**
+ * Show quick start guide
+ */
+async function showQuickStartGuide(): Promise<void> {
+  const guide = [
+    '🎯 Quick Start Guide',
+    '',
+    '1. Create/Open an HTML file in your workspace',
+    '2. Right-click the file → "Open with Live Server"',
+    '3. Click "Open Browser" in the notification',
+    '4. Edit your files - changes auto-reload in browser!',
+    '',
+    '⚙️ Pro Tips:',
+    '• Use status bar "Go Live" button for quick start',
+    '• Configure browser: Cmd/Ctrl+P → "Live Server: Select Browser"',
+    '• Enable HTTPS: Settings → "Live Server Lite" → HTTPS',
+    '• Customize port: Settings → "Live Server Lite" → Port'
+  ].join('\n');
+
+  await vscode.window.showInformationMessage(guide, { modal: true });
+}
+
+/**
+ * Create a sample HTML file for testing
+ */
+async function createSampleHTML(): Promise<void> {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
+    vscode.window.showWarningMessage('Please open a folder first to create the sample HTML file.');
+    return;
+  }
+
+  const sampleHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Server Lite - Sample</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .status { background: #4CAF50; color: white; padding: 10px; border-radius: 5px; text-align: center; }
+        .instructions { background: #f5f5f5; padding: 20px; border-left: 4px solid #2196F3; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Live Server Lite Sample</h1>
+    <div class="status">✅ Live Server is working!</div>
+    <div class="instructions">
+        <h3>Try This:</h3>
+        <ol>
+            <li>Right-click this file and select "Open with Live Server"</li>
+            <li>Edit this text and save the file</li>
+            <li>Watch the browser auto-reload! ✨</li>
+        </ol>
+    </div>
+    <p><strong>Timestamp:</strong> <span id="time"></span></p>
+    <script>document.getElementById('time').textContent = new Date().toLocaleString();</script>
+</body>
+</html>`;
+
+  const samplePath = vscode.Uri.joinPath(workspaceFolder.uri, 'live-server-sample.html');
+  
+  try {
+    await vscode.workspace.fs.writeFile(samplePath, Buffer.from(sampleHTML, 'utf8'));
+    const doc = await vscode.workspace.openTextDocument(samplePath);
+    await vscode.window.showTextDocument(doc);
+    
+    const startNow = await vscode.window.showInformationMessage(
+      '✅ Sample HTML created! Would you like to start Live Server now?',
+      'Start Live Server',
+      'Later'
+    );
+    
+    if (startNow === 'Start Live Server') {
+      await startLiveServer(samplePath);
+    }
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create sample file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 export function deactivate() {
   if (serverManager) {
     serverManager.dispose();
@@ -453,5 +642,9 @@ export function deactivate() {
   
   if (statusBar) {
     statusBar.dispose();
+  }
+  
+  if (performanceMonitor) {
+    performanceMonitor.dispose();
   }
 }
