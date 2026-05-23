@@ -17,6 +17,15 @@ export interface ServerConfig {
   middleware?: MiddlewareConfig[];
   open?: boolean;
   verbose?: boolean;
+  spa?: boolean;
+}
+
+export interface RequestLogEntry {
+  method: string;
+  path: string;
+  status: number;
+  duration: number;
+  timestamp: Date;
 }
 
 export interface ProxyConfig {
@@ -96,7 +105,7 @@ export interface FileWatcherManager {
   start(root: string, ignored?: string[], options?: WatcherOptions): void;
   stop(): void;
   restart(): void;
-  onFileChange(callback: FileChangeCallback): void;
+  onChange(callback: FileChangeCallback): void;
   addIgnorePattern(pattern: string): void;
   removeIgnorePattern(pattern: string): void;
   isWatching(): boolean;
@@ -148,6 +157,7 @@ export interface ServerState {
   startTime?: Date;
   isHttps?: boolean;
   certInfo?: CertificateInfo;
+  requestCount?: number;
 }
 
 export interface ExtensionState {
@@ -342,9 +352,17 @@ export interface HTTPSOptions {
 // Enhanced Server Options with HTTPS support
 export interface EnhancedServerOptions extends ServerOptions {
   https?: HTTPSOptions;
+  spa?: boolean;
+  proxy?: ProxyConfig[];
 }
 
 // Disposable Pattern
 export interface Disposable {
   dispose(): void;
+}
+
+// Performance Monitor Interface
+export interface IPerformanceMonitor {
+  onServerStart(): void;
+  onServerStop(): void;
 }

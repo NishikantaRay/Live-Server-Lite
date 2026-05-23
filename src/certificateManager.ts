@@ -14,7 +14,7 @@ export class CertificateManager implements ICertificateManager {
     // Use VS Code's global storage path for certificates
     const globalStoragePath = vscode.workspace.getConfiguration().get<string>('liveServerLite.certificateStoragePath') ||
       path.join(require('os').homedir(), '.vscode', 'live-server-lite', 'certs');
-    
+
     this.defaultCertPath = globalStoragePath;
     this.ensureCertificateDirectory();
   }
@@ -41,10 +41,10 @@ export class CertificateManager implements ICertificateManager {
 
       // Generate or load default self-signed certificates
       const certKey = `default-${options?.domain || 'localhost'}`;
-      
+
       if (this.certificateCache.has(certKey)) {
         const cached = this.certificateCache.get(certKey)!;
-        
+
         // Check if certificate is still valid
         if (await this.isCertificateValid(cached)) {
           return cached;
@@ -54,7 +54,7 @@ export class CertificateManager implements ICertificateManager {
       // Generate new self-signed certificate
       const certInfo = await this.generateSelfSignedCertificate(options?.domain || 'localhost');
       this.certificateCache.set(certKey, certInfo);
-      
+
       return certInfo;
     } catch (error) {
       console.error('Error getting certificates:', error);
@@ -76,7 +76,7 @@ export class CertificateManager implements ICertificateManager {
       // Use OpenSSL if available, otherwise create a minimal certificate
       try {
         const { cert, key } = await this.generateWithNodeForge(domain);
-        
+
         // Write certificate files
         await fs.promises.writeFile(keyPath, key);
         await fs.promises.writeFile(certPath, cert);
@@ -111,21 +111,21 @@ export class CertificateManager implements ICertificateManager {
   /**
    * Generate certificate using node-forge library (most reliable)
    */
-  private async generateWithNodeForge(domain: string): Promise<{cert: string, key: string}> {
+  private async generateWithNodeForge(domain: string): Promise<{ cert: string, key: string }> {
     try {
       // Create key pair
       const keys = forge.pki.rsa.generateKeyPair(2048);
-      
+
       // Create certificate
       const cert = forge.pki.createCertificate();
-      
+
       // Set certificate fields
       cert.publicKey = keys.publicKey;
       cert.serialNumber = '01';
       cert.validity.notBefore = new Date();
       cert.validity.notAfter = new Date();
       cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
-      
+
       // Set certificate attributes
       const attrs = [
         { name: 'commonName', value: domain },
@@ -135,10 +135,10 @@ export class CertificateManager implements ICertificateManager {
         { name: 'organizationName', value: 'Live Server Lite' },
         { shortName: 'OU', value: 'Development' }
       ];
-      
+
       cert.setSubject(attrs);
       cert.setIssuer(attrs);
-      
+
       // Add extensions for HTTPS compatibility
       cert.setExtensions([
         {
@@ -171,14 +171,14 @@ export class CertificateManager implements ICertificateManager {
           ]
         }
       ]);
-      
+
       // Self-sign certificate
       cert.sign(keys.privateKey, forge.md.sha256.create());
-      
+
       // Convert to PEM format
       const certPem = forge.pki.certificateToPem(cert);
       const keyPem = forge.pki.privateKeyToPem(keys.privateKey);
-      
+
       return { cert: certPem, key: keyPem };
     } catch (error) {
       console.error('Failed to generate certificate with node-forge:', error);
@@ -231,14 +231,16 @@ export class CertificateManager implements ICertificateManager {
       // Check if files exist first
       await fs.promises.access(certPath);
       await fs.promises.access(keyPath);
-      
+
       const cert = await fs.promises.readFile(certPath, 'utf8');
       const key = await fs.promises.readFile(keyPath, 'utf8');
 
       // Parse certificate info
       const certInfo = this.parseCertificateInfo(cert, certPath, keyPath);
       certInfo.key = key; // Add the key to the certificate info
-      
+      // Custom certs provided by the user are treated as trusted (not self-signed)
+      certInfo.isSelfSigned = false;
+
       console.log(`Loaded custom certificate from ${certPath}`);
       return certInfo;
 
@@ -266,7 +268,7 @@ export class CertificateManager implements ICertificateManager {
         const subject = cert.subject.getField('CN');
         const issuer = cert.issuer.getField('CN');
         const domain = subject ? subject.value : 'localhost';
-        
+
         return {
           cert: certPem,
           key: '', // Will be loaded separately for security
@@ -282,12 +284,12 @@ export class CertificateManager implements ICertificateManager {
         // Fallback to regex parsing
         const domainMatch = certPem.match(/CN=([^,\s]+)/);
         const domain = domainMatch ? domainMatch[1] : 'localhost';
-        
+
         // Check if self-signed (simplified detection)
-        const isSelfSigned = certPem.includes('Live Server Lite') || 
-                            certPem.includes('Self-Signed') ||
-                            certPem.includes('localhost');
-        
+        const isSelfSigned = certPem.includes('Live Server Lite') ||
+          certPem.includes('Self-Signed') ||
+          certPem.includes('localhost');
+
         return {
           cert: certPem,
           key: '', // Will be loaded separately for security
@@ -314,7 +316,7 @@ export class CertificateManager implements ICertificateManager {
       // Create a basic self-signed certificate structure
       const now = new Date();
       const expiry = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
-      
+
       // Generate a simple certificate for development use
       // Note: This is a minimal implementation for development only
       const certData = {
@@ -331,10 +333,10 @@ export class CertificateManager implements ICertificateManager {
 
       // Create a minimal PEM certificate structure
       const certBody = Buffer.from(JSON.stringify(certData)).toString('base64');
-      
+
       // Break into 64-character lines for proper PEM format
       const formattedCertBody = certBody.match(/.{1,64}/g)?.join('\n') || certBody;
-      
+
       return `-----BEGIN CERTIFICATE-----
 ${formattedCertBody}
 -----END CERTIFICATE-----`;
@@ -364,7 +366,7 @@ MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAw4f9k3sIqL1lN0h3q1
       if (certInfo.certPath && certInfo.keyPath) {
         const certExists = await fs.promises.access(certInfo.certPath).then(() => true).catch(() => false);
         const keyExists = await fs.promises.access(certInfo.keyPath).then(() => true).catch(() => false);
-        
+
         if (!certExists || !keyExists) {
           return false;
         }
@@ -399,7 +401,7 @@ MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAw4f9k3sIqL1lN0h3q1
   async deleteCertificates(domain?: string): Promise<void> {
     try {
       const targetDir = domain ? path.join(this.defaultCertPath, domain) : this.defaultCertPath;
-      
+
       if (await fs.promises.access(targetDir).then(() => true).catch(() => false)) {
         await fs.promises.rmdir(targetDir, { recursive: true });
         console.log(`Deleted certificates for ${domain || 'all domains'}`);
@@ -415,14 +417,14 @@ MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAw4f9k3sIqL1lN0h3q1
   async listCertificates(): Promise<CertificateInfo[]> {
     try {
       const certificates: CertificateInfo[] = [];
-      
+
       if (await fs.promises.access(this.defaultCertPath).then(() => true).catch(() => false)) {
         const domains = await fs.promises.readdir(this.defaultCertPath);
-        
+
         for (const domain of domains) {
           const certPath = path.join(this.defaultCertPath, domain, 'server.crt');
           const certInfo = await this.getCertificateInfo(certPath);
-          
+
           if (certInfo) {
             certificates.push(certInfo);
           }

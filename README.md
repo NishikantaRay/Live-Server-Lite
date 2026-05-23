@@ -1,6 +1,6 @@
 # Live Server Lite - Auto Reload & Static Server
 
-[![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)](https://github.com/NishikantaRay/Live-Server-Lite/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-brightgreen.svg)](https://github.com/NishikantaRay/Live-Server-Lite/releases)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.74.0+-green.svg)](https://code.visualstudio.com/)
 [![Cursor](https://img.shields.io/badge/Cursor-compatible-blue.svg)](https://cursor.sh/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -19,11 +19,11 @@
 > 
 > ⚡ **Perfect for**: Frontend development, static sites, React/Vue/Angular SPAs, API testing, and web app prototyping with **intelligent notifications**
 >
-> 🔒 **Production Ready**: **v1.1.0 stable release** with complete HTTPS support, SSL certificate management, performance optimization, and professional-grade architecture.
+> 🔒 **Production Ready**: **v1.2.0 stable release** with complete HTTPS support, SSL certificate management, performance optimization, and professional-grade architecture.
 >
 > 🖥️ **Wide Compatibility**: Works with VS Code 1.74.0+ and Cursor IDE - perfect for any development environment!
 >
-> 🆕 **What's New in v1.1.0**: Fixed notification display bugs, added Brave browser support, performance monitoring dashboard, enhanced error management with actionable solutions, welcome experience for new users, and comprehensive testing infrastructure.
+> 🆕 **What's New in v1.2.0**: **QR code for mobile access**, **in-editor preview panel**, **copy server URL**, **HTTP request logger**, **SPA mode** for React/Vue/Angular client-side routing, and **proxy support** for API forwarding.
 
 ---
 
@@ -46,7 +46,12 @@
 | 🎯 **One-Click Setup** | Right-click HTML file → "Open with Live Server" → Done! |
 | ⚡ **Instant Reload** | Save any file → Browser refreshes automatically |
 | 🔒 **HTTPS Ready** | Test PWAs, service workers, secure contexts |
-| 📱 **Mobile Testing** | Access `http://your-ip:5500` from phones/tablets |
+| 📱 **QR Code Access** | Scan QR code to instantly open on your mobile device |
+| 🖥️ **In-Editor Preview** | Side-by-side preview panel right inside VS Code |
+| 🔀 **SPA Mode** | React/Vue/Angular client-side routing support (index.html fallback) |
+| 🔁 **Proxy Support** | Forward `/api` calls to your backend server seamlessly |
+| 📊 **Request Logger** | Live HTTP request log with method, status, and response time |
+| 📋 **Copy URL** | One-click copy of the server URL to clipboard |
 | 🌐 **Multi-Browser** | Choose Chrome, Firefox, Safari, Edge, **Brave** automatically |
 | 🦁 **Brave Support** | Full Brave browser integration with auto-detection |
 | ⚙️ **Zero Config** | Works out-of-the-box with intelligent defaults |
@@ -115,29 +120,33 @@
 ### ⚡️ **Technical Excellence**
 - **Modular Architecture**: Cleanly separated concerns across dedicated modules
 - **TypeScript Integration**: 25+ comprehensive interfaces for type safety
-- **Extensive Testing**: 200+ test cases with **100% success rate** on critical features (v1.1.0 validation complete)
+- **Extensive Testing**: 206+ test cases with **100% success rate** on critical features (v1.2.0 validation complete)
 - **✅ Bug-Free Experience**: Fixed notification display and URL opening issues
 - **🆕 Performance Optimized**: Memory monitoring, batched file events, native watchers, and large project optimizations
 - **🆕 Smart File Watching**: Auto-excludes node_modules, build folders, with configurable patterns
 - **🆕 Certificate Management**: Proper SSL certificate generation with node-forge library (fully stable)
 - **🆕 Intelligent Error Recovery**: Automatic retry mechanisms with user-friendly solutions
+- **🆕 SPA & Proxy Support**: Built-in SPA fallback and HTTP proxy middleware for modern app development
 - **Modern Development**: Built with Express.js, Chokidar, WebSocket APIs, and robust HTTPS support
 
 ---
 
 ## 🏆 Why Choose Live Server Lite?
 
-| **Live Server Lite v1.1.0** | **vs. Alternatives** |
+| **Live Server Lite v1.2.0** | **vs. Alternatives** |
 |----------------------|----------------------|
 | ✅ **Bug-Free Experience** - Fixed notification and URL opening issues | ❌ Extensions with known bugs and poor user experience |
+| ✅ **QR Code & Mobile Access** - Instant QR code for phone/tablet testing | ❌ No mobile sharing or QR code support |
+| ✅ **In-Editor Preview** - Side-by-side WebView panel inside VS Code | ❌ Always opens external browser window |
+| ✅ **SPA Mode** - index.html fallback for React/Vue/Angular routing | ❌ No client-side routing support |
+| ✅ **Proxy Support** - Forward /api paths to backend server | ❌ No proxy, requires manual CORS workarounds |
+| ✅ **Request Logger** - Live HTTP request log with status and timing | ❌ No visibility into server traffic |
 | ✅ **Brave Browser Support** - Full integration with modern browsers | ❌ Limited browser support or outdated detection |
 | ✅ **Performance Monitoring** - Real-time analytics and optimization | ❌ No performance insights or optimization guidance |
 | ✅ **Smart Error Handling** - Actionable solutions with auto-recovery | ❌ Basic error messages without helpful guidance |
-| ✅ **Welcome Experience** - Comprehensive onboarding for new users | ❌ No guidance or documentation for beginners |
 | ✅ **Lightweight & Fast** - Minimal resource usage with monitoring | ❌ Heavy extensions that slow down VS Code |
-| ✅ **Modern Architecture** - TypeScript, modular design, 200+ tests | ❌ Legacy codebases with technical debt |
+| ✅ **Modern Architecture** - TypeScript, modular design, 206+ tests | ❌ Legacy codebases with technical debt |
 | ✅ **Active Development** - Regular updates, bug fixes, and new features | ❌ Abandoned or rarely updated projects |
-| ✅ **Professional Support** - Comprehensive docs, FAQ, and community | ❌ Limited documentation and support |
 
 ---
 
@@ -567,7 +576,42 @@ For quick testing without certificate setup:
 
 ## 🆕 Enhanced Commands & Features
 
-Live Server Lite v1.1.0 includes powerful new features for improved productivity, security, and user experience:
+Live Server Lite v1.2.0 adds powerful new developer tools on top of the existing v1.1.0 feature set:
+
+### **📱 Mobile & Sharing (New in v1.2.0)**
+- **📱 Show QR Code**: `Live Server Lite: Show QR Code for Mobile` — displays a scannable QR code for your network URL in an editor panel
+- **📋 Copy Server URL**: `Live Server Lite: Copy Server URL` — copies the local server URL to clipboard with one command
+
+### **🖥️ In-Editor Preview (New in v1.2.0)**
+- **🖥️ Preview in Editor**: `Live Server Lite: Preview in Editor` — opens an inline WebView preview panel beside your code
+  - Toolbar with refresh button and URL display
+  - Reuses the same panel on repeat invocations
+  - Sandboxed iframe with script and form support
+
+### **📊 Request Logger (New in v1.2.0)**
+- **📊 Show Request Log**: `Live Server Lite: Show Request Log` — opens the output channel showing all HTTP requests
+  - Logs method, status code, response time, and path for every request
+  - Automatically active when the server is running
+  - Toggle with `liveServerLite.requestLog.enabled`
+
+### **🔀 SPA Mode (New in v1.2.0)**
+- Enable via `liveServerLite.spa: true` setting
+- All unmatched routes serve `index.html` instead of 404
+- Required for React Router, Vue Router, Angular routing, and similar client-side routers
+```json
+{ "liveServerLite.spa": true }
+```
+
+### **🔁 Proxy Support (New in v1.2.0)**
+- Configure via `liveServerLite.proxy` array
+- Forward API calls to a separate backend server — no CORS headaches
+```json
+{
+  "liveServerLite.proxy": [
+    { "context": "/api", "target": "http://localhost:8080" }
+  ]
+}
+```
 
 ### **🔒 HTTPS & Security Commands**
 - **🛡️ Start HTTPS Server**: `Live Server Lite: Start HTTPS Server` - Launch secure development server

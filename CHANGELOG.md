@@ -4,7 +4,56 @@ All notable changes to the "live-server-lite" extension will be documented in th
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.0.0] - 2025-01-20
+## [1.2.0] - 2026-05-23
+
+### ✨ New Features
+
+#### 📱 QR Code for Mobile Access
+- New command: **`Live Server Lite: Show QR Code for Mobile`**
+- Generates a scannable QR code for the server's network URL in an in-editor WebView panel
+- Works immediately when the server is running — scan with any phone to open on mobile
+- Displays both network URL and local URL side-by-side for easy sharing
+- Requires device to be on the same Wi-Fi network as your computer
+
+#### 🖥️ Preview in Editor (Inline WebView)
+- New command: **`Live Server Lite: Preview in Editor`**
+- Opens a live in-editor preview panel beside your code (VS Code split view)
+- Toolbar with URL display and one-click refresh button
+- Reuses the same panel on repeated invocations (no duplicate panels)
+- Fully sandboxed iframe — supports scripts, forms, and same-origin navigation
+
+#### 📋 Copy Server URL
+- New command: **`Live Server Lite: Copy Server URL`**
+- Instantly copies the local server URL to the clipboard
+- Shows a confirmation notification with the copied URL
+
+#### 📊 HTTP Request Logger
+- New command: **`Live Server Lite: Show Request Log`**
+- Logs every HTTP request to the **"Live Server - Requests"** output channel
+- Displays method, status code, response time (ms), and path per request
+- Zero-config — automatically active when the server is running
+- Controlled by new setting: `liveServerLite.requestLog.enabled`
+
+#### 🔀 SPA (Single Page Application) Mode
+- New setting: **`liveServerLite.spa`** (boolean, default: `false`)
+- When enabled, all unmatched routes return `index.html` instead of 404
+- Essential for React, Vue, Angular, and other apps using client-side routing
+- Works transparently alongside existing static file serving
+
+#### 🔁 Proxy Support
+- New setting: **`liveServerLite.proxy`** (array, default: `[]`)
+- Forward request path prefixes to upstream servers (e.g. `/api` → `http://localhost:8080`)
+- Built-in proxy handler with HTTP and HTTPS upstream support
+- Supports `context`, `target`, `changeOrigin`, and `secure` options per rule
+- No additional dependencies — uses Node.js built-in `http`/`https` modules
+
+### Improved
+- TypeScript interfaces updated: `EnhancedServerOptions` now includes `spa` and `proxy` fields
+- New `RequestLogEntry` interface in `types.ts` for structured request logging
+- `ServerManager` now exposes `setRequestLogger()` for pluggable logging
+- `tsconfig.json` updated to include DOM lib types (needed for `@types/qrcode`)
+
+
 
 ### 🚀 Major Release - Production-Ready HTTPS Security Platform
 

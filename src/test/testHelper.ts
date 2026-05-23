@@ -18,7 +18,7 @@ export class TestHelper {
   static async createTestServerConfig(overrides: Partial<ServerConfig> = {}): Promise<ServerConfig> {
     const tempDir = await this.createTempDir();
     const port = await this.getAvailablePort();
-    
+
     return {
       port,
       root: tempDir,
@@ -54,7 +54,7 @@ export class TestHelper {
 
       // Ensure directory exists
       await fs.promises.mkdir(dirPath, { recursive: true });
-      
+
       // Write file content
       await fs.promises.writeFile(filePath, file.content, file.encoding || 'utf8');
       testFiles.push(filePath);
@@ -145,6 +145,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     this.tempDirs = [];
     this.usedPorts.clear();
+
+    // Restore workspace folders to the extension root so subsequent tests are unaffected
+    const extensionRoot = path.resolve(__dirname, '..', '..');
+    this.mockWorkspaceFolders([extensionRoot]);
   }
 
   /**
@@ -163,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     interval: number = 100
   ): Promise<boolean> {
     const start = Date.now();
-    
+
     while (Date.now() - start < timeout) {
       const result = await condition();
       if (result) {
@@ -171,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       await this.wait(interval);
     }
-    
+
     return false;
   }
 
@@ -198,12 +202,12 @@ document.addEventListener('DOMContentLoaded', function() {
   static async isPortAvailable(port: number): Promise<boolean> {
     return new Promise((resolve) => {
       const server = require('net').createServer();
-      
+
       server.listen(port, () => {
         server.once('close', () => resolve(true));
         server.close();
       });
-      
+
       server.on('error', () => resolve(false));
     });
   }
@@ -229,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
   static async makeRequest(url: string, options: any = {}): Promise<{ status: number; body: string; headers: any }> {
     const http = require('http');
     const urlParsed = new URL(url);
-    
+
     return new Promise((resolve, reject) => {
       const req = http.request({
         hostname: urlParsed.hostname,
@@ -248,13 +252,13 @@ document.addEventListener('DOMContentLoaded', function() {
           });
         });
       });
-      
+
       req.on('error', reject);
-      
+
       if (options.body) {
         req.write(options.body);
       }
-      
+
       req.end();
     });
   }
@@ -265,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
   static async createWebSocketConnection(url: string): Promise<any> {
     const WebSocket = require('ws');
     const ws = new WebSocket(url);
-    
+
     return new Promise((resolve, reject) => {
       ws.on('open', () => resolve(ws));
       ws.on('error', reject);
@@ -330,10 +334,10 @@ document.addEventListener('DOMContentLoaded', function() {
       calls.push(args);
       return spy.returnValue;
     };
-    
+
     spy.calls = calls;
     spy.callCount = () => calls.length;
-    spy.calledWith = (...args: any[]) => calls.some(call => 
+    spy.calledWith = (...args: any[]) => calls.some(call =>
       call.length === args.length && call.every((arg: any, i: number) => arg === args[i])
     );
     spy.returnValue = undefined;
@@ -341,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
       calls.length = 0;
       spy.returnValue = undefined;
     };
-    
+
     return spy;
   }
 }

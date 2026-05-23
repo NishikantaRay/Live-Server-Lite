@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
+import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { BrowserConfig } from './types';
 
@@ -61,7 +62,7 @@ export class BrowserManager {
    */
   getAvailableBrowsers(): BrowserConfig[] {
     const currentPlatform = os.platform() as 'win32' | 'darwin' | 'linux';
-    return this.predefinedBrowsers.filter(browser => 
+    return this.predefinedBrowsers.filter(browser =>
       browser.platforms.includes(currentPlatform)
     );
   }
@@ -71,15 +72,13 @@ export class BrowserManager {
    */
   async detectInstalledBrowsers(): Promise<BrowserConfig[]> {
     const availableBrowsers = this.getAvailableBrowsers();
-    const installedBrowsers: BrowserConfig[] = [];
-
-    for (const browser of availableBrowsers) {
-      if (await this.isBrowserInstalled(browser.command)) {
-        installedBrowsers.push(browser);
-      }
-    }
-
-    return installedBrowsers;
+    const results = await Promise.all(
+      availableBrowsers.map(async (browser) => ({
+        browser,
+        installed: await this.isBrowserInstalled(browser.command)
+      }))
+    );
+    return results.filter(r => r.installed).map(r => r.browser);
   }
 
   /**
@@ -87,7 +86,7 @@ export class BrowserManager {
    */
   async showBrowserSelection(): Promise<string | undefined> {
     const installedBrowsers = await this.detectInstalledBrowsers();
-    
+
     const quickPickItems = [
       { label: 'System Default', detail: 'Use system default browser', value: 'default' },
       ...installedBrowsers.map(browser => ({
@@ -190,30 +189,12 @@ export class BrowserManager {
    * Check if a browser is installed by trying to execute it
    */
   private async isBrowserInstalled(command: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      try {
-        const testProcess = spawn(command, ['--version'], {
-          stdio: 'ignore'
-        });
-
-        testProcess.on('error', () => {
-          resolve(false);
-        });
-
-        testProcess.on('close', (code) => {
-          resolve(code === 0);
-        });
-
-        // Timeout after 2 seconds
-        setTimeout(() => {
-          testProcess.kill();
-          resolve(false);
-        }, 2000);
-
-      } catch (error) {
-        resolve(false);
-      }
-    });
+    try {
+      await fs.promises.access(command, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

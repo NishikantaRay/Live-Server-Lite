@@ -1,33 +1,87 @@
 import * as vscode from 'vscode';
 import * as http from 'http';
 import * as https from 'https';
+import * as fs from 'fs';
 import * as WebSocket from 'ws';
 import * as path from 'path';
 import express from 'express';
-import { 
-  LiveServerManager, 
-  ServerConfig, 
-  ServerInfo, 
+import {
+  LiveServerManager,
+  ServerConfig,
+  ServerInfo,
   ServerState,
   ServerResponse,
   ServerStats,
   ServerOptions,
   EnhancedServerOptions,
   HTTPSOptions,
-  CertificateInfo
+  CertificateInfo,
+  IPerformanceMonitor,
+  RequestLogEntry,
+  ProxyConfig
 } from './types';
 import { FileWatcher } from './fileWatcher';
 import { NotificationManager } from './notificationManager';
 import { BrowserManager } from './browserManager';
 import { CertificateManager } from './certificateManager';
-import { 
-  generateUrls, 
-  getRelativePath, 
-  fileExists, 
-  readFileContent, 
+import {
+  generateUrls,
+  getRelativePath,
+  fileExists,
+  readFileContent,
   injectWebSocketScript,
   getDefaultIgnorePatterns
 } from './utils';
+
+/**
+ * Creates an express middleware that proxies requests to an upstream target.
+ */
+function createProxyHandler(proxyConfig: ProxyConfig) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+    let targetUrl: URL;
+    try {
+      targetUrl = new URL(proxyConfig.target);
+    } catch {
+      console.error(`Invalid proxy target: ${proxyConfig.target}`);
+      next();
+      return;
+    }
+
+    const isSecure = targetUrl.protocol === 'https:';
+    const transport = isSecure ? https : http;
+    const port = targetUrl.port ? parseInt(targetUrl.port) : (isSecure ? 443 : 80);
+
+    // Rebuild the path: strip the context prefix if changeOrigin is not desired
+    const upstreamPath = req.url || '/';
+
+    const options: http.RequestOptions & { rejectUnauthorized?: boolean } = {
+      hostname: targetUrl.hostname,
+      port,
+      path: upstreamPath,
+      method: req.method,
+      headers: { ...req.headers, host: targetUrl.host },
+      rejectUnauthorized: proxyConfig.secure !== false
+    };
+
+    const proxyReq = transport.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 502, proxyRes.headers as http.OutgoingHttpHeaders);
+      proxyRes.pipe(res, { end: true });
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error(`Proxy error [${proxyConfig.context} -> ${proxyConfig.target}]: ${err.message}`);
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'Bad Gateway', message: err.message });
+      }
+    });
+
+    if (req.readable) {
+      req.pipe(proxyReq, { end: true });
+    } else {
+      proxyReq.end();
+    }
+  };
+}
 
 export class ServerManager implements LiveServerManager {
   private state: ServerState = {};
@@ -35,26 +89,34 @@ export class ServerManager implements LiveServerManager {
   private notificationManager: NotificationManager;
   private browserManager: BrowserManager;
   private certificateManager: CertificateManager;
-  private performanceMonitor?: any; // Will be injected
+  private performanceMonitor?: IPerformanceMonitor;
+  private lastHtmlUri?: vscode.Uri;
+  private lastOptions?: EnhancedServerOptions;
+  private isStarting = false;
+  private requestLogger?: (entry: RequestLogEntry) => void;
 
   constructor() {
     this.fileWatcher = new FileWatcher();
     this.notificationManager = new NotificationManager();
     this.browserManager = new BrowserManager();
     this.certificateManager = new CertificateManager();
-    
+
     // Initialize notifications with default options
-    this.notificationManager.initialize({ 
-      enabled: true, 
-      showInStatusBar: true 
+    this.notificationManager.initialize({
+      enabled: true,
+      showInStatusBar: true
     });
   }
 
   /**
    * Set performance monitor reference for server state notifications
    */
-  setPerformanceMonitor(monitor: any): void {
+  setPerformanceMonitor(monitor: IPerformanceMonitor): void {
     this.performanceMonitor = monitor;
+  }
+
+  setRequestLogger(logger: (entry: RequestLogEntry) => void): void {
+    this.requestLogger = logger;
   }
 
   /**
@@ -65,26 +127,35 @@ export class ServerManager implements LiveServerManager {
       throw new Error('Server is already running');
     }
 
+    if (this.isStarting) {
+      return {
+        success: false,
+        message: 'Server is already starting',
+        error: { code: 'STARTING', message: 'Server is already starting', timestamp: new Date() }
+      };
+    }
+
+    this.isStarting = true;
+    this.lastHtmlUri = htmlUri;
+    this.lastOptions = options;
+
     try {
       const config = await this.createServerConfig(htmlUri, options);
       await this.startServer(config, options?.https);
-      
+
       const serverInfo = this.getServerInfo();
       if (!serverInfo) {
         throw new Error('Server info not available after starting');
       }
 
-      // Show success notification but don't handle actions automatically
-      // Show success notification and handle user action
-      const action = await this.notificationManager.showServerStarted(
-        serverInfo.port, 
-        serverInfo.localUrl
-      );
-
-      // Handle user's choice from notification
-      if (action) {
-        await this.handleNotificationAction(action, serverInfo, options);
-      }
+      // Show notification without blocking the server start response
+      this.notificationManager.showServerStarted(serverInfo.port, serverInfo.localUrl)
+        .then(action => {
+          if (action) {
+            this.handleNotificationAction(action, serverInfo, options).catch(console.error);
+          }
+        })
+        .catch(console.error);
 
       // Notify performance monitor that server started
       if (this.performanceMonitor) {
@@ -98,26 +169,34 @@ export class ServerManager implements LiveServerManager {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
-      // Show error notification
+
+      // Show error notification (non-blocking)
       if (error instanceof Error) {
         if (errorMessage.includes('Port') && errorMessage.includes('is already in use')) {
           const portMatch = errorMessage.match(/Port (\d+)/);
           const port = portMatch ? parseInt(portMatch[1]) : 3000;
           const suggestedPort = await this.findAvailablePort(port + 1);
-          
-          const action = await this.notificationManager.showPortInUse(port, suggestedPort);
-          if (action === 'tryDifferentPort' && suggestedPort) {
-            // Try starting with the suggested port
-            const newOptions = { ...options, port: suggestedPort };
-            return this.start(htmlUri, newOptions);
-          }
+
+          this.notificationManager.showPortInUse(port, suggestedPort)
+            .then(action => {
+              if (action === 'tryDifferentPort' && suggestedPort) {
+                const newOptions = { ...options, port: suggestedPort };
+                this.start(htmlUri, newOptions).catch(console.error);
+              }
+            })
+            .catch(console.error);
         } else {
-          await this.notificationManager.showServerError(error);
+          this.notificationManager.showServerError(error).catch(console.error);
         }
       }
-      
-      throw new Error(`Failed to start server: ${errorMessage}`);
+
+      return {
+        success: false,
+        message: `Failed to start server: ${errorMessage}`,
+        error: { code: 'START_ERROR', message: errorMessage, timestamp: new Date() }
+      };
+    } finally {
+      this.isStarting = false;
     }
   }
 
@@ -127,7 +206,7 @@ export class ServerManager implements LiveServerManager {
   async stop(): Promise<ServerResponse> {
     if (!this.state.server) {
       return {
-        success: false,
+        success: true,
         message: 'Server is not running'
       };
     }
@@ -147,15 +226,15 @@ export class ServerManager implements LiveServerManager {
         const currentPort = this.state.config?.port || 0;
         this.state.server!.close(() => {
           this.state = {};
-          
+
           // Notify performance monitor that server stopped
           if (this.performanceMonitor) {
             this.performanceMonitor.onServerStop();
           }
-          
+
           // Show stop notification
           this.notificationManager.showServerStopped(currentPort);
-          
+
           resolve({
             success: true,
             message: 'Server stopped successfully'
@@ -175,15 +254,18 @@ export class ServerManager implements LiveServerManager {
    * Restart the live server
    */
   async restart(): Promise<ServerResponse> {
+    const htmlUri = this.lastHtmlUri;
+    const options = this.lastOptions;
+
     const stopResponse = await this.stop();
     if (!stopResponse.success) {
       return stopResponse;
     }
-    
+
     // Wait a bit before restarting
     await new Promise(resolve => setTimeout(resolve, 100));
-    
-    return this.start();
+
+    return this.start(htmlUri, options);
   }
 
   /**
@@ -202,11 +284,11 @@ export class ServerManager implements LiveServerManager {
     }
 
     const { localUrl, networkUrl } = generateUrls(
-      this.state.config.port, 
+      this.state.config.port,
       this.state.config.defaultFile || '',
       this.state.isHttps || false
     );
-    
+
     return {
       port: this.state.config.port,
       localUrl,
@@ -227,9 +309,9 @@ export class ServerManager implements LiveServerManager {
 
     return {
       uptime: Date.now() - this.state.startTime.getTime(),
-      requests: 0, // TODO: Implement request counting
+      requests: this.state.requestCount ?? 0,
       connections: this.state.connections?.size || 0,
-      errors: 0, // TODO: Implement error counting
+      errors: 0,
       lastActivity: new Date()
     };
   }
@@ -248,54 +330,111 @@ export class ServerManager implements LiveServerManager {
    */
   private async createServerConfig(htmlUri?: vscode.Uri, options?: EnhancedServerOptions): Promise<ServerConfig> {
     const config = vscode.workspace.getConfiguration('liveServerLite');
-    
+
     // Get current workspace folder
-    const workspaceFolder = htmlUri 
+    const workspaceFolder = htmlUri
       ? vscode.workspace.getWorkspaceFolder(htmlUri)
       : vscode.workspace.workspaceFolders?.[0];
 
-    if (!workspaceFolder) {
+    if (!workspaceFolder && !htmlUri) {
       throw new Error('No workspace folder found. Please open a folder or file first.');
     }
 
     // Determine root directory
     let rootDir: string;
     if (htmlUri) {
-      const stat = await vscode.workspace.fs.stat(htmlUri);
-      rootDir = (stat.type & vscode.FileType.Directory) 
-        ? htmlUri.fsPath 
-        : path.dirname(htmlUri.fsPath);
+      // When a specific HTML file is provided, use its directory as root
+      // (even if the file isn't inside an open workspace)
+      try {
+        const stat = await vscode.workspace.fs.stat(htmlUri);
+        rootDir = (stat.type & vscode.FileType.Directory)
+          ? htmlUri.fsPath
+          : path.dirname(htmlUri.fsPath);
+      } catch {
+        rootDir = path.dirname(htmlUri.fsPath);
+      }
     } else {
-      rootDir = workspaceFolder.uri.fsPath;
+      rootDir = workspaceFolder!.uri.fsPath;
+    }
+
+    // Validate the root directory exists
+    const rootExists = await fs.promises.access(rootDir).then(() => true).catch(() => false);
+    if (!rootExists) {
+      throw new Error(`Workspace root directory does not exist: ${rootDir}`);
+    }
+
+    // When a specific HTML file is provided, include it as the default file in the URL
+    let defaultFile: string | undefined;
+    if (htmlUri) {
+      try {
+        const stat = await vscode.workspace.fs.stat(htmlUri);
+        if (!(stat.type & vscode.FileType.Directory)) {
+          defaultFile = path.basename(htmlUri.fsPath);
+        }
+      } catch {
+        // If we can't stat, assume it's a file
+        defaultFile = path.basename(htmlUri.fsPath);
+      }
     }
 
     // Find available port
     const requestedPort = options?.port || config.get<number>('port', 3000);
     const port = await this.findAvailablePort(requestedPort);
-    
+
     if (!port) {
       throw new Error('Unable to find available port');
     }
-    
+
     return {
       port,
       root: rootDir,
+      defaultFile,
       host: options?.host || config.get<string>('host', 'localhost'),
       open: options?.open ?? config.get<boolean>('openBrowser', true),
       https: options?.https || config.get<boolean>('https', false),
       cors: options?.cors ?? config.get<boolean>('cors', true),
-      verbose: options?.verbose ?? config.get<boolean>('verbose', false)
+      verbose: options?.verbose ?? config.get<boolean>('verbose', false),
+      spa: options?.spa ?? config.get<boolean>('spa', false),
+      proxy: options?.proxy || config.get<ProxyConfig[]>('proxy', [])
     };
   }  /**
    * Start the Express server with WebSocket support
    */
   private async startServer(config: ServerConfig, httpsOptions?: HTTPSOptions): Promise<void> {
     const app = express();
-    
+
+    // Request counter + request logger middleware
+    app.use((req, res, next) => {
+      if (this.state.requestCount !== undefined) {
+        this.state.requestCount++;
+      }
+      if (this.requestLogger) {
+        const start = Date.now();
+        const timestamp = new Date();
+        res.on('finish', () => {
+          this.requestLogger!({
+            method: req.method,
+            path: req.url,
+            status: res.statusCode,
+            duration: Date.now() - start,
+            timestamp
+          });
+        });
+      }
+      next();
+    });
+
+    // Proxy middleware — forward matching paths to upstream targets
+    if (config.proxy && config.proxy.length > 0) {
+      for (const proxyEntry of config.proxy) {
+        app.use(proxyEntry.context, createProxyHandler(proxyEntry));
+      }
+    }
+
     // Middleware to inject WebSocket script into HTML responses
     app.use(async (req, res, next) => {
       const filePath = path.join(config.root, req.path === '/' ? config.defaultFile || 'index.html' : req.path);
-      
+
       if (filePath.endsWith('.html') && await fileExists(filePath)) {
         try {
           const html = await readFileContent(filePath);
@@ -312,10 +451,22 @@ export class ServerManager implements LiveServerManager {
     // Serve static files
     app.use(express.static(config.root));
 
+    // SPA fallback: serve index.html for any unmatched path
+    if (config.spa) {
+      const fallbackFile = path.join(config.root, config.defaultFile || 'index.html');
+      app.use((_req, res) => {
+        res.sendFile(fallbackFile, (err) => {
+          if (err) {
+            res.status(404).send('Not Found');
+          }
+        });
+      });
+    }
+
     // Create server (HTTP or HTTPS based on options)
     let server;
     let isHttps = false;
-    let certInfo: any = null;
+    let certInfo: CertificateInfo | null = null;
 
     if (httpsOptions?.enabled && this.certificateManager) {
       // HTTPS server
@@ -331,16 +482,16 @@ export class ServerManager implements LiveServerManager {
           throw new Error('Failed to obtain HTTPS certificates');
         }
 
-        // Show warning for self-signed certificates
-        if (certInfo.selfSigned && httpsOptions.warnOnSelfSigned !== false) {
-          await this.notificationManager.showCertificateWarning(
+        // Show warning for self-signed certificates (non-blocking)
+        if (certInfo.isSelfSigned && httpsOptions.warnOnSelfSigned !== false) {
+          this.notificationManager.showCertificateWarning(
             httpsOptions.domain || 'localhost',
-            certInfo.certPath
-          );
+            certInfo.certPath ?? ''
+          ).catch(console.error);
         }
 
         const httpsModule = await import('https');
-        
+
         server = httpsModule.createServer({
           key: certInfo.key,
           cert: certInfo.cert
@@ -365,7 +516,8 @@ export class ServerManager implements LiveServerManager {
     this.state.startTime = new Date();
     this.state.connections = new Set();
     this.state.isHttps = isHttps;
-    this.state.certInfo = certInfo;
+    this.state.certInfo = certInfo ?? undefined;
+    this.state.requestCount = 0;
 
     // Track WebSocket connections
     this.state.webSocketServer.on('connection', (ws: WebSocket) => {
@@ -419,7 +571,7 @@ export class ServerManager implements LiveServerManager {
           resolved = true;
           clearTimeout(timeout);
           this.cleanup();
-          
+
           if (error.code === 'EADDRINUSE') {
             reject(new Error(`Port ${config.port} is already in use`));
           } else {
@@ -450,40 +602,36 @@ export class ServerManager implements LiveServerManager {
    */
   private cleanup(): void {
     const port = this.state.config?.port || 0;
-    
+
     this.fileWatcher.stop();
-    
+
     if (this.state.webSocketServer) {
       this.state.webSocketServer.close();
       this.state.webSocketServer = undefined;
     }
-    
+
     this.state.server = undefined;
     this.state.config = undefined;
     this.state.startTime = undefined;
     this.state.connections?.clear();
     this.state.connections = undefined;
-
-    // Show stopped notification
-    if (port > 0) {
-      this.notificationManager.showServerStopped(port);
-    }
+    this.state.requestCount = undefined;
   }
 
   /**
    * Handle notification actions from user interaction
    */
   private async handleNotificationAction(
-    action: string, 
-    serverInfo: ServerInfo, 
+    action: string,
+    serverInfo: ServerInfo,
     options?: ServerOptions
   ): Promise<void> {
     try {
       switch (action) {
         case 'openBrowser':
           await this.browserManager.openBrowser(
-            serverInfo.localUrl, 
-            options?.browserPath, 
+            serverInfo.localUrl,
+            options?.browserPath,
             options?.browserArgs
           );
           break;
@@ -506,7 +654,7 @@ export class ServerManager implements LiveServerManager {
     } catch (error) {
       console.error('Error handling notification action:', error);
       if (error instanceof Error) {
-        await this.notificationManager.showServerError(error);
+        this.notificationManager.showServerError(error).catch(console.error);
       }
     }
   }
@@ -529,16 +677,16 @@ export class ServerManager implements LiveServerManager {
   private async isPortAvailable(port: number): Promise<boolean> {
     return new Promise((resolve) => {
       const server = http.createServer();
-      
+
       let resolved = false;
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          server.close(() => {});
+          server.close(() => { });
           resolve(false);
         }
       }, 1000);
-      
+
       server.on('error', () => {
         if (!resolved) {
           resolved = true;
@@ -546,7 +694,7 @@ export class ServerManager implements LiveServerManager {
           resolve(false);
         }
       });
-      
+
       server.listen(port, '127.0.0.1', () => {
         if (!resolved) {
           resolved = true;

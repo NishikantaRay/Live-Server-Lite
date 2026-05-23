@@ -355,7 +355,7 @@ suite('Edge Case and Error Handling Tests', () => {
         throw new Error('Callback intentionally throwing error');
       };
 
-      fileWatcher.onFileChange(errorCallback);
+      fileWatcher.onChange(errorCallback);
       fileWatcher.start(testContext.workspaceRoot);
       
       await TestHelper.wait(200);

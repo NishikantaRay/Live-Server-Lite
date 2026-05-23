@@ -9,22 +9,31 @@ export class FileWatcher implements FileWatcherManager {
   private batchTimer?: NodeJS.Timeout;
   private batchedEvents: FileChangeEvent[] = [];
   private options: WatcherOptions = {};
+  private watchRoot?: string;
+  private watchIgnored: string[] = [];
+  private watchOptions: WatcherOptions = {};
+  private extraIgnorePatterns: string[] = [];
 
   /**
    * Start watching files in the specified root directory with optimizations for large projects
    */
-  start(root: string, ignored: string[] = this.getOptimizedIgnorePatterns(), options: WatcherOptions = {}): void {
+  start(root: string, ignored: string[] = [], options: WatcherOptions = {}): void {
     if (this.watcher) {
       console.warn('FileWatcher is already running');
       return;
     }
 
+    this.watchRoot = root;
+    this.watchIgnored = ignored;
+    this.watchOptions = options;
+
     this.options = { ...this.getDefaultOptions(), ...options };
 
     // Enhanced ignore patterns for large projects
-    const optimizedIgnored = this.options.largeProjectOptimization 
-      ? this.getOptimizedIgnorePatterns(ignored)
-      : ignored;
+    const allIgnored = [...ignored, ...this.extraIgnorePatterns];
+    const optimizedIgnored = this.options.largeProjectOptimization
+      ? this.getOptimizedIgnorePatterns(allIgnored)
+      : allIgnored;
 
     const chokidarOptions = {
       ignoreInitial: this.options.ignoreInitial ?? true,
@@ -173,15 +182,16 @@ export class FileWatcher implements FileWatcherManager {
    */
   private processBatchedEvents(): void {
     if (this.batchedEvents.length === 0 || !this.changeCallback) {
+      this.batchedEvents = [];
+      this.batchTimer = undefined;
       return;
     }
 
     try {
-      // Process each event in the batch
-      for (const event of this.batchedEvents) {
-        console.log(`Batched File ${event.type}: ${event.path}`);
-        this.changeCallback(event);
-      }
+      // Use the last event to represent the entire batch — triggers a single reload
+      const lastEvent = this.batchedEvents[this.batchedEvents.length - 1];
+      console.log(`Batch of ${this.batchedEvents.length} file change(s), triggering reload`);
+      this.changeCallback(lastEvent);
     } catch (error) {
       console.error('Error processing batched file change events:', error);
     }
@@ -229,21 +239,21 @@ export class FileWatcher implements FileWatcherManager {
    * Restart the file watcher
    */
   restart(): void {
+    if (!this.watchRoot) {
+      return;
+    }
+    const savedCallback = this.changeCallback;
     this.stop();
-    // Note: Would need to store previous parameters to restart properly
-    // This is a simplified implementation
+    this.start(
+      this.watchRoot,
+      [...this.watchIgnored, ...this.extraIgnorePatterns],
+      this.watchOptions
+    );
+    if (savedCallback) {
+      this.changeCallback = savedCallback;
+    }
   }
 
-  /**
-   * Set the callback function to be called when files change
-   */
-  onFileChange(callback: FileChangeCallback): void {
-    this.changeCallback = callback;
-  }
-
-  /**
-   * Set the callback for file change events
-   */
   onChange(callback: FileChangeCallback): void {
     this.changeCallback = callback;
   }
@@ -262,22 +272,23 @@ export class FileWatcher implements FileWatcherManager {
     this.watcher?.unwatch(path);
   }
 
-  /**
-   * Add ignore pattern
-   */
   addIgnorePattern(pattern: string): void {
-    // This would require restarting the watcher with new ignore patterns
-    // Simplified implementation for now
-    console.log(`Added ignore pattern: ${pattern}`);
+    if (!this.extraIgnorePatterns.includes(pattern)) {
+      this.extraIgnorePatterns.push(pattern);
+      if (this.isWatching()) {
+        this.restart();
+      }
+    }
   }
 
-  /**
-   * Remove ignore pattern
-   */
   removeIgnorePattern(pattern: string): void {
-    // This would require restarting the watcher with updated ignore patterns
-    // Simplified implementation for now
-    console.log(`Removed ignore pattern: ${pattern}`);
+    const idx = this.extraIgnorePatterns.indexOf(pattern);
+    if (idx !== -1) {
+      this.extraIgnorePatterns.splice(idx, 1);
+      if (this.isWatching()) {
+        this.restart();
+      }
+    }
   }
 
   /**

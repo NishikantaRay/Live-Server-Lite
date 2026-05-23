@@ -104,7 +104,7 @@ suite('Integration Tests', () => {
         let fileChangeDetected = false;
         
         // Start file watcher with change callback
-        fileWatcher.onFileChange(() => {
+        fileWatcher.onChange(() => {
           fileChangeDetected = true;
         });
         
