@@ -148,6 +148,15 @@ export class ServerManager implements LiveServerManager {
         throw new Error('Server info not available after starting');
       }
 
+      // Auto-open browser if configured (non-blocking)
+      if (config.open) {
+        this.browserManager.openBrowser(
+          serverInfo.localUrl,
+          options?.browserPath,
+          options?.browserArgs
+        ).catch(console.error);
+      }
+
       // Show notification without blocking the server start response
       this.notificationManager.showServerStarted(serverInfo.port, serverInfo.localUrl)
         .then(action => {
@@ -462,6 +471,40 @@ export class ServerManager implements LiveServerManager {
         });
       });
     }
+
+    // Directory listing fallback: when no index file is found, show a helpful file listing
+    app.use(async (req, res) => {
+      if (req.path !== '/') {
+        res.status(404).send(`<html><body style="font-family:sans-serif;padding:2em"><h2>404 Not Found</h2><p>The file <code>${req.path}</code> was not found.</p><p><a href="/">Back to root</a></p></body></html>`);
+        return;
+      }
+      try {
+        const entries = await fs.promises.readdir(config.root, { withFileTypes: true });
+        const items = entries
+          .filter(e => !e.name.startsWith('.'))
+          .sort((a, b) => {
+            if (a.isDirectory() !== b.isDirectory()) { return a.isDirectory() ? -1 : 1; }
+            return a.name.localeCompare(b.name);
+          })
+          .map(e => {
+            const icon = e.isDirectory() ? '📁' : '📄';
+            const suffix = e.isDirectory() ? '/' : '';
+            return `<li>${icon} <a href="/${e.name}${suffix}">${e.name}${suffix}</a></li>`;
+          })
+          .join('\n');
+        res.setHeader('Content-Type', 'text/html');
+        res.send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Live Server – ${path.basename(config.root)}</title>
+<style>body{font-family:sans-serif;max-width:800px;margin:2em auto;padding:0 1em}ul{list-style:none;padding:0}li{padding:.4em 0;font-size:1.1em}a{text-decoration:none;color:#0066cc}a:hover{text-decoration:underline}h2{color:#333}</style>
+</head><body>
+<h2>📂 ${path.basename(config.root)}</h2>
+<p>No <code>index.html</code> found. Here are the files in this folder:</p>
+<ul>${items}</ul>
+</body></html>`);
+      } catch {
+        res.status(500).send('Internal Server Error');
+      }
+    });
 
     // Create server (HTTP or HTTPS based on options)
     let server;

@@ -184,7 +184,28 @@ async function startLiveServer(htmlUri?: vscode.Uri): Promise<void> {
       }
     }
 
-    const response = await serverManager.start(htmlUri);
+    const config = vscode.workspace.getConfiguration('liveServerLite');
+    const httpsEnabled = config.get<boolean>('https', false);
+
+    let serverOptions;
+    if (httpsEnabled) {
+      serverOptions = {
+        port: config.get<number>('https.port', 3443),
+        host: config.get<string>('host', 'localhost'),
+        open: config.get<boolean>('openBrowser', true),
+        https: {
+          enabled: true,
+          port: config.get<number>('https.port', 3443),
+          certPath: config.get<string>('https.certPath', ''),
+          keyPath: config.get<string>('https.keyPath', ''),
+          domain: config.get<string>('https.domain', 'localhost'),
+          autoGenerateCert: config.get<boolean>('https.autoGenerateCert', true),
+          warnOnSelfSigned: config.get<boolean>('https.warnOnSelfSigned', true)
+        }
+      };
+    }
+
+    const response = await serverManager.start(htmlUri, serverOptions);
 
     if (!response.success) {
       const errorMessage = response.error?.message || 'Unknown error occurred';
