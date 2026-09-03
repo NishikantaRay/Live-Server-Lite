@@ -442,6 +442,8 @@ export class ServerManager implements LiveServerManager {
       }
     }
 
+    const resolvedRoot = path.resolve(config.root);
+
     // Resolve a request path to a file on disk, refusing anything that escapes
     // the served root (e.g. "/../../etc/passwd" or an encoded equivalent).
     const resolveWithinRoot = (urlPath: string): string | null => {
@@ -451,7 +453,6 @@ export class ServerManager implements LiveServerManager {
       } catch {
         return null;
       }
-      const resolvedRoot = path.resolve(config.root);
       const candidate = path.resolve(resolvedRoot, '.' + path.posix.normalize(decoded));
       if (candidate !== resolvedRoot && !candidate.startsWith(resolvedRoot + path.sep)) {
         return null;
@@ -459,20 +460,28 @@ export class ServerManager implements LiveServerManager {
       return candidate;
     };
 
-    // Index files tried when a directory is requested. `defaultFile` (set when
-    // the user launches a specific page) takes priority. `index.htm` and the
+    // Index files tried when a directory is requested. `index.htm` and the
     // capitalised spellings matter on case-sensitive filesystems.
     const indexCandidates = [
-      ...(config.defaultFile ? [config.defaultFile] : []),
       'index.html',
       'index.htm',
       'Index.html',
       'default.html'
     ];
 
-    /** Find the first existing index file inside `dir`, if any. */
+    /**
+     * Find the first existing index file inside `dir`, if any.
+     *
+     * `defaultFile` (set when the user launches a specific page) applies only
+     * to the served root: it names the page to open, not a per-directory index,
+     * so `/docs/` must still resolve `docs/index.html` rather than the launched
+     * page's basename.
+     */
     const findIndexFile = async (dir: string): Promise<string | null> => {
-      for (const candidate of indexCandidates) {
+      const candidates = dir === resolvedRoot && config.defaultFile
+        ? [config.defaultFile, ...indexCandidates]
+        : indexCandidates;
+      for (const candidate of candidates) {
         const full = path.join(dir, candidate);
         if (await fileExists(full)) {
           return full;
@@ -524,10 +533,23 @@ export class ServerManager implements LiveServerManager {
     // Serve static files
     app.use(express.static(config.root));
 
-    // SPA fallback: serve index.html for any unmatched path
+    // SPA fallback: serve index.html for any unmatched path.
+    //
+    // Only GET/HEAD navigations qualify. Without these guards a missing bundle
+    // returns 200 + HTML, which surfaces in the browser as "Unexpected token
+    // '<'" rather than a 404, and non-GET requests that no proxy claimed would
+    // answer with the app shell.
     if (config.spa) {
-      app.use(async (_req, res, next) => {
-        const fallbackFile = await findIndexFile(path.resolve(config.root));
+      app.use(async (req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          next();
+          return;
+        }
+        if (!req.accepts('html') || path.posix.extname(req.path)) {
+          next();
+          return;
+        }
+        const fallbackFile = await findIndexFile(resolvedRoot);
         if (!fallbackFile) {
           next();
           return;
@@ -561,7 +583,7 @@ export class ServerManager implements LiveServerManager {
             .map(e => {
               const icon = e.isDirectory() ? '📁' : '📄';
               const suffix = e.isDirectory() ? '/' : '';
-              const href = base + encodeURIComponent(e.name) + suffix;
+              const href = escapeHtml(base + encodeURIComponent(e.name) + suffix);
               return `<li>${icon} <a href="${href}">${escapeHtml(e.name)}${suffix}</a></li>`;
             })
             .join('\n');

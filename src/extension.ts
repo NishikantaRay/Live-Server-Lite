@@ -494,6 +494,24 @@ async function toggleHttpsMode(): Promise<void> {
       // Update configuration
       await config.update('https.enabled', useHttps, vscode.ConfigurationTarget.Workspace);
 
+      // isHttpsEnabled() ORs in the deprecated `liveServerLite.https` boolean,
+      // so a user upgrading from <=1.3.1 with that key set could never toggle
+      // HTTPS back off. Clear it once we own the namespaced flag.
+      if (!useHttps) {
+        for (const target of [
+          vscode.ConfigurationTarget.Workspace,
+          vscode.ConfigurationTarget.Global
+        ]) {
+          try {
+            if (config.inspect('https')) {
+              await config.update('https', undefined, target);
+            }
+          } catch {
+            // Setting absent at this scope, or not writable — nothing to clear.
+          }
+        }
+      }
+
       // Restart server if it's running
       if (serverManager.isRunning()) {
         await serverManager.stop();

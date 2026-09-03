@@ -18,8 +18,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   including a link to the parent directory.
 - Requests that escape the served root (e.g. `/../../etc/passwd`, including URL-encoded forms)
   are rejected with `403` instead of being resolved against the filesystem.
-- Filenames in the directory listing are HTML-escaped and URL-encoded, so names containing
-  `&`, `<`, quotes, or spaces link correctly and cannot inject markup.
+- Filenames in the directory listing are HTML-escaped and URL-encoded, and the generated
+  `href` is escaped as well, so names containing `&`, `<`, quotes, or spaces link correctly
+  and cannot break out of the attribute to inject markup.
 
 #### Fixed: HTTPS not used when starting from the status bar (#12)
 - `liveServerLite.https` was declared as a boolean *and* used as the parent namespace for
@@ -30,6 +31,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - The flag now lives at **`liveServerLite.https.enabled`**, which no longer collides.
   The old `liveServerLite.https: true` setting is still honoured, so existing configurations
   keep working.
+
+#### Fixed: SPA mode swallowed 404s
+- The SPA fallback answered *every* unmatched request with `index.html`, so a missing
+  bundle returned `200` + HTML — surfacing in the browser as `Unexpected token '<'`
+  rather than a clear 404 — and non-`GET` requests that no proxy claimed were answered
+  with the app shell. The fallback is now limited to `GET`/`HEAD` navigations that accept
+  HTML and carry no file extension.
+
+#### Fixed: HTTPS could not be switched back off after upgrading
+- **Toggle HTTPS/HTTP** wrote only the new `liveServerLite.https.enabled` key, while the
+  deprecated `liveServerLite.https` boolean is still read for backward compatibility. A
+  user upgrading from 1.3.1 with the old key set to `true` could never turn HTTPS off.
+  Selecting HTTP now also clears the deprecated key.
 
 #### Fixed: live reload silently broken over HTTPS
 - The injected reload client hardcoded `ws://`. Browsers block an insecure WebSocket from an

@@ -323,6 +323,21 @@ suite('Utils Unit Tests', () => {
     test('leaves ordinary filenames untouched', () => {
       assert.strictEqual(escapeHtml('my-file_v2.html'), 'my-file_v2.html');
     });
+
+    test('keeps a quoted href attribute intact for hostile directory names', () => {
+      // Mirrors the directory-listing anchor in ServerManager.startServer. The
+      // href is built from req.path, which carries the directory name; a name
+      // containing a double quote used to close the attribute early and let
+      // the rest parse as live markup (onerror=...).
+      const base = '/ab"onerror=alert(1) x="/';
+      const href = escapeHtml(base + encodeURIComponent('file.txt'));
+
+      assert.ok(!href.includes('"'), 'href must contain no raw double quote');
+      assert.strictEqual(
+        `<a href="${href}">file.txt</a>`,
+        '<a href="/ab&quot;onerror=alert(1) x=&quot;/file.txt">file.txt</a>'
+      );
+    });
   });
 
   suite('served-root containment (issue #1 regression)', () => {
@@ -365,6 +380,36 @@ suite('Utils Unit Tests', () => {
       // "/tmp/served-rootevil" fail to match root "/tmp/served-root".
       const sibling = root + 'evil';
       assert.ok(sibling !== root && !sibling.startsWith(root + path.sep));
+    });
+  });
+
+  suite('index candidate scoping', () => {
+    // Mirrors the candidate selection in ServerManager.startServer's
+    // findIndexFile. `defaultFile` names the page the user launched, so it
+    // must apply to the served root only — applying it to every directory
+    // made "/docs/" resolve "docs/about.html" ahead of "docs/index.html".
+    const indexCandidates = ['index.html', 'index.htm', 'Index.html', 'default.html'];
+    const candidatesFor = (dir: string, root: string, defaultFile?: string) =>
+      dir === root && defaultFile ? [defaultFile, ...indexCandidates] : indexCandidates;
+
+    const root = path.resolve(path.sep + path.join('tmp', 'served-root'));
+
+    test('prefers the launched page at the served root', () => {
+      assert.deepStrictEqual(
+        candidatesFor(root, root, 'about.html'),
+        ['about.html', ...indexCandidates]
+      );
+    });
+
+    test('does not apply the launched page to subdirectories', () => {
+      assert.deepStrictEqual(
+        candidatesFor(path.join(root, 'docs'), root, 'about.html'),
+        indexCandidates
+      );
+    });
+
+    test('falls back to the standard candidates when no page was launched', () => {
+      assert.deepStrictEqual(candidatesFor(root, root, undefined), indexCandidates);
     });
   });
 });
