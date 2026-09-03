@@ -533,19 +533,31 @@ export class ServerManager implements LiveServerManager {
     // Serve static files
     app.use(express.static(config.root));
 
-    // SPA fallback: serve index.html for any unmatched path.
+    // SPA fallback: serve index.html for unmatched *navigation* requests.
     //
-    // Only GET/HEAD navigations qualify. Without these guards a missing bundle
-    // returns 200 + HTML, which surfaces in the browser as "Unexpected token
-    // '<'" rather than a 404, and non-GET requests that no proxy claimed would
-    // answer with the app shell.
+    // Without a guard the fallback answers everything, so a missing bundle
+    // returns 200 + HTML — surfacing as "Unexpected token '<'" instead of a
+    // 404 — and an unproxied POST gets the app shell.
+    //
+    // `Sec-Fetch-Mode: navigate` is what distinguishes a real navigation from
+    // a subresource or fetch(); every browser that ships Sec-Fetch-* sets it.
+    // Extension-based heuristics are not usable here: `extname` treats SPA
+    // deep links like /users/john.doe as files, and `req.accepts('html')` is
+    // true for fetch()'s default `Accept: */*`.
+    //
+    // Clients without the header (curl, older browsers) fall back to the
+    // Accept check, which favours serving the shell over a spurious 404.
     if (config.spa) {
       app.use(async (req, res, next) => {
         if (req.method !== 'GET' && req.method !== 'HEAD') {
           next();
           return;
         }
-        if (!req.accepts('html') || path.posix.extname(req.path)) {
+        const fetchMode = req.get('sec-fetch-mode');
+        const isNavigation = fetchMode
+          ? fetchMode === 'navigate'
+          : (req.get('accept') ?? '').includes('text/html');
+        if (!isNavigation) {
           next();
           return;
         }

@@ -36,14 +36,17 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - The SPA fallback answered *every* unmatched request with `index.html`, so a missing
   bundle returned `200` + HTML — surfacing in the browser as `Unexpected token '<'`
   rather than a clear 404 — and non-`GET` requests that no proxy claimed were answered
-  with the app shell. The fallback is now limited to `GET`/`HEAD` navigations that accept
-  HTML and carry no file extension.
+  with the app shell. The fallback is now limited to `GET`/`HEAD` requests that browsers
+  mark as real navigations (`Sec-Fetch-Mode: navigate`), falling back to the `Accept`
+  header for clients that don't send it.
 
 #### Fixed: HTTPS could not be switched back off after upgrading
 - **Toggle HTTPS/HTTP** wrote only the new `liveServerLite.https.enabled` key, while the
-  deprecated `liveServerLite.https` boolean is still read for backward compatibility. A
-  user upgrading from 1.3.1 with the old key set to `true` could never turn HTTPS off.
-  Selecting HTTP now also clears the deprecated key.
+  deprecated `liveServerLite.https` boolean is still read for backward compatibility, so a
+  user upgrading from 1.3.1 with the old key set to `true` saw HTTPS come back after
+  selecting HTTP. Selecting HTTP now warns when that key is what's forcing HTTPS, with a
+  shortcut to settings.json. The extension cannot clear it automatically: re-declaring the
+  boolean beside `liveServerLite.https.*` would reintroduce the namespace collision above.
 
 #### Fixed: live reload silently broken over HTTPS
 - The injected reload client hardcoded `ws://`. Browsers block an insecure WebSocket from an

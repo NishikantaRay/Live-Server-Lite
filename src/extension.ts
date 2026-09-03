@@ -495,20 +495,34 @@ async function toggleHttpsMode(): Promise<void> {
       await config.update('https.enabled', useHttps, vscode.ConfigurationTarget.Workspace);
 
       // isHttpsEnabled() ORs in the deprecated `liveServerLite.https` boolean,
-      // so a user upgrading from <=1.3.1 with that key set could never toggle
-      // HTTPS back off. Clear it once we own the namespaced flag.
+      // so a user upgrading from <=1.3.1 with that key still set to true would
+      // see HTTPS come back despite selecting HTTP.
+      //
+      // We cannot clear it for them: the key is deliberately unregistered
+      // (re-declaring the boolean beside `liveServerLite.https.*` is the very
+      // namespace collision that broke the flag in the first place — issue
+      // #12), and `update()` throws for unregistered configuration. Tell the
+      // user instead of failing silently.
       if (!useHttps) {
-        for (const target of [
-          vscode.ConfigurationTarget.Workspace,
-          vscode.ConfigurationTarget.Global
-        ]) {
-          try {
-            if (config.inspect('https')) {
-              await config.update('https', undefined, target);
+        const legacy = config.inspect<unknown>('https');
+        const legacySetAt = [
+          legacy?.workspaceFolderValue,
+          legacy?.workspaceValue,
+          legacy?.globalValue
+        ].some(v => v === true);
+
+        if (legacySetAt) {
+          void vscode.window.showWarningMessage(
+            'The deprecated "liveServerLite.https": true setting is still enabling HTTPS. ' +
+            'Remove it from your settings.json to use HTTP.',
+            'Open Settings'
+          ).then(choice => {
+            if (choice === 'Open Settings') {
+              void vscode.commands.executeCommand(
+                'workbench.action.openSettingsJson'
+              );
             }
-          } catch {
-            // Setting absent at this scope, or not writable — nothing to clear.
-          }
+          });
         }
       }
 

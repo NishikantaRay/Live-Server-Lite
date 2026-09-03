@@ -324,11 +324,15 @@ suite('Utils Unit Tests', () => {
       assert.strictEqual(escapeHtml('my-file_v2.html'), 'my-file_v2.html');
     });
 
-    test('keeps a quoted href attribute intact for hostile directory names', () => {
-      // Mirrors the directory-listing anchor in ServerManager.startServer. The
-      // href is built from req.path, which carries the directory name; a name
-      // containing a double quote used to close the attribute early and let
-      // the rest parse as live markup (onerror=...).
+    test('keeps a quoted href attribute intact for hostile path segments', () => {
+      // Defense in depth for the directory-listing anchor in
+      // ServerManager.startServer, whose href is built from req.path.
+      //
+      // Express 5 leaves req.path percent-encoded, so a raw `"` does not reach
+      // the builder today and this is not a live injection. The escaping guards
+      // the invariant rather than a current exploit: were an unencoded quote
+      // ever to arrive, it would close the attribute early and the remainder
+      // would parse as live markup.
       const base = '/ab"onerror=alert(1) x="/';
       const href = escapeHtml(base + encodeURIComponent('file.txt'));
 
