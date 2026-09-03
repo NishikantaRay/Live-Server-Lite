@@ -30,7 +30,9 @@ import {
   fileExists,
   readFileContent,
   injectWebSocketScript,
-  getDefaultIgnorePatterns
+  getDefaultIgnorePatterns,
+  isHttpsEnabled,
+  escapeHtml
 } from './utils';
 
 /**
@@ -400,7 +402,7 @@ export class ServerManager implements LiveServerManager {
       defaultFile,
       host: options?.host || config.get<string>('host', 'localhost'),
       open: options?.open ?? config.get<boolean>('openBrowser', true),
-      https: options?.https || config.get<boolean>('https', false),
+      https: options?.https || isHttpsEnabled(config),
       cors: options?.cors ?? config.get<boolean>('cors', true),
       verbose: options?.verbose ?? config.get<boolean>('verbose', false),
       spa: options?.spa ?? config.get<boolean>('spa', false),
@@ -440,16 +442,78 @@ export class ServerManager implements LiveServerManager {
       }
     }
 
-    // Middleware to inject WebSocket script into HTML responses
-    app.use(async (req, res, next) => {
-      const filePath = path.join(config.root, req.path === '/' ? config.defaultFile || 'index.html' : req.path);
+    // Resolve a request path to a file on disk, refusing anything that escapes
+    // the served root (e.g. "/../../etc/passwd" or an encoded equivalent).
+    const resolveWithinRoot = (urlPath: string): string | null => {
+      let decoded: string;
+      try {
+        decoded = decodeURIComponent(urlPath);
+      } catch {
+        return null;
+      }
+      const resolvedRoot = path.resolve(config.root);
+      const candidate = path.resolve(resolvedRoot, '.' + path.posix.normalize(decoded));
+      if (candidate !== resolvedRoot && !candidate.startsWith(resolvedRoot + path.sep)) {
+        return null;
+      }
+      return candidate;
+    };
 
-      if (filePath.endsWith('.html') && await fileExists(filePath)) {
+    // Index files tried when a directory is requested. `defaultFile` (set when
+    // the user launches a specific page) takes priority. `index.htm` and the
+    // capitalised spellings matter on case-sensitive filesystems.
+    const indexCandidates = [
+      ...(config.defaultFile ? [config.defaultFile] : []),
+      'index.html',
+      'index.htm',
+      'Index.html',
+      'default.html'
+    ];
+
+    /** Find the first existing index file inside `dir`, if any. */
+    const findIndexFile = async (dir: string): Promise<string | null> => {
+      for (const candidate of indexCandidates) {
+        const full = path.join(dir, candidate);
+        if (await fileExists(full)) {
+          return full;
+        }
+      }
+      return null;
+    };
+
+    const isDirectory = async (target: string): Promise<boolean> => {
+      try {
+        return (await fs.promises.stat(target)).isDirectory();
+      } catch {
+        return false;
+      }
+    };
+
+    // Serve HTML with the live-reload script injected. Directories resolve to
+    // their index file here so that a project whose entry point is not a
+    // root-level index.html still loads instead of falling through to a
+    // "Cannot GET /" from express.
+    app.use(async (req, res, next) => {
+      const target = resolveWithinRoot(req.path);
+      if (!target) {
+        res.status(403).send('Forbidden');
+        return;
+      }
+
+      let filePath: string | null = null;
+      if (await isDirectory(target)) {
+        filePath = await findIndexFile(target);
+      } else if (/\.html?$/i.test(target) && await fileExists(target)) {
+        filePath = target;
+      }
+
+      if (filePath) {
         try {
           const html = await readFileContent(filePath);
-          const injectedHtml = injectWebSocketScript(html);
-          res.setHeader('Content-Type', 'text/html');
-          return res.send(injectedHtml);
+          const injectedHtml = injectWebSocketScript(html, this.state.isHttps === true);
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.send(injectedHtml);
+          return;
         } catch (error) {
           console.error('Error reading HTML file:', error);
         }
@@ -462,48 +526,67 @@ export class ServerManager implements LiveServerManager {
 
     // SPA fallback: serve index.html for any unmatched path
     if (config.spa) {
-      const fallbackFile = path.join(config.root, config.defaultFile || 'index.html');
-      app.use((_req, res) => {
-        res.sendFile(fallbackFile, (err) => {
-          if (err) {
-            res.status(404).send('Not Found');
-          }
-        });
+      app.use(async (_req, res, next) => {
+        const fallbackFile = await findIndexFile(path.resolve(config.root));
+        if (!fallbackFile) {
+          next();
+          return;
+        }
+        try {
+          const html = await readFileContent(fallbackFile);
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.send(injectWebSocketScript(html, this.state.isHttps === true));
+        } catch {
+          next();
+        }
       });
     }
 
-    // Directory listing fallback: when no index file is found, show a helpful file listing
+    // Directory listing fallback: when no index file is found, show a helpful
+    // file listing for the requested directory instead of express's default
+    // "Cannot GET /" page.
     app.use(async (req, res) => {
-      if (req.path !== '/') {
-        res.status(404).send(`<html><body style="font-family:sans-serif;padding:2em"><h2>404 Not Found</h2><p>The file <code>${req.path}</code> was not found.</p><p><a href="/">Back to root</a></p></body></html>`);
-        return;
-      }
-      try {
-        const entries = await fs.promises.readdir(config.root, { withFileTypes: true });
-        const items = entries
-          .filter(e => !e.name.startsWith('.'))
-          .sort((a, b) => {
-            if (a.isDirectory() !== b.isDirectory()) { return a.isDirectory() ? -1 : 1; }
-            return a.name.localeCompare(b.name);
-          })
-          .map(e => {
-            const icon = e.isDirectory() ? '📁' : '📄';
-            const suffix = e.isDirectory() ? '/' : '';
-            return `<li>${icon} <a href="/${e.name}${suffix}">${e.name}${suffix}</a></li>`;
-          })
-          .join('\n');
-        res.setHeader('Content-Type', 'text/html');
-        res.send(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Live Server – ${path.basename(config.root)}</title>
-<style>body{font-family:sans-serif;max-width:800px;margin:2em auto;padding:0 1em}ul{list-style:none;padding:0}li{padding:.4em 0;font-size:1.1em}a{text-decoration:none;color:#0066cc}a:hover{text-decoration:underline}h2{color:#333}</style>
+      const target = resolveWithinRoot(req.path);
+
+      if (target && await isDirectory(target)) {
+        try {
+          const entries = await fs.promises.readdir(target, { withFileTypes: true });
+          const base = req.path.endsWith('/') ? req.path : req.path + '/';
+          const items = entries
+            .filter(e => !e.name.startsWith('.'))
+            .sort((a, b) => {
+              if (a.isDirectory() !== b.isDirectory()) { return a.isDirectory() ? -1 : 1; }
+              return a.name.localeCompare(b.name);
+            })
+            .map(e => {
+              const icon = e.isDirectory() ? '📁' : '📄';
+              const suffix = e.isDirectory() ? '/' : '';
+              const href = base + encodeURIComponent(e.name) + suffix;
+              return `<li>${icon} <a href="${href}">${escapeHtml(e.name)}${suffix}</a></li>`;
+            })
+            .join('\n');
+          const parentLink = req.path === '/'
+            ? ''
+            : `<p><a href="${escapeHtml(path.posix.dirname(base.replace(/\/$/, '')) || '/')}">⬆️ Parent directory</a></p>`;
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Live Server – ${escapeHtml(path.basename(target) || '/')}</title>
+<style>body{font-family:sans-serif;max-width:800px;margin:2em auto;padding:0 1em}ul{list-style:none;padding:0}li{padding:.4em 0;font-size:1.1em}a{text-decoration:none;color:#0066cc}a:hover{text-decoration:underline}h2{color:#333}code{background:#f4f4f4;padding:.1em .3em;border-radius:3px}</style>
 </head><body>
-<h2>📂 ${path.basename(config.root)}</h2>
-<p>No <code>index.html</code> found. Here are the files in this folder:</p>
+<h2>📂 ${escapeHtml(base)}</h2>
+<p>No index file found in this folder. Here is what it contains:</p>
+${parentLink}
 <ul>${items}</ul>
 </body></html>`);
-      } catch {
-        res.status(500).send('Internal Server Error');
+          return;
+        } catch {
+          res.status(500).send('Internal Server Error');
+          return;
+        }
       }
+
+      res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(`<html><body style="font-family:sans-serif;padding:2em"><h2>404 Not Found</h2><p>The file <code>${escapeHtml(req.path)}</code> was not found.</p><p><a href="/">Back to root</a></p></body></html>`);
     });
 
     // Create server (HTTP or HTTPS based on options)

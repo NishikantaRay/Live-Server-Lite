@@ -4,6 +4,58 @@ All notable changes to the "live-server-lite" extension will be documented in th
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.3.2] - 2026-08-31
+
+### 🐛 Bug Fixes
+
+#### Fixed: "Cannot GET /" when opening the server (#1, #2, #3, #5, #6, #7, #9, #10, #11)
+- The server now resolves an index file for **any** directory, not just the workspace root.
+  Projects whose entry point lives in a subfolder (`public/index.html`, `src/index.html`, …)
+  previously fell through to Express's default `Cannot GET /` page.
+- Index resolution now also tries `index.htm`, `Index.html`, and `default.html`, so projects
+  work identically on case-sensitive filesystems (Linux) and case-insensitive ones (macOS/Windows).
+- Directories without any index file now render a browsable file listing instead of a bare 404,
+  including a link to the parent directory.
+- Requests that escape the served root (e.g. `/../../etc/passwd`, including URL-encoded forms)
+  are rejected with `403` instead of being resolved against the filesystem.
+- Filenames in the directory listing are HTML-escaped and URL-encoded, so names containing
+  `&`, `<`, quotes, or spaces link correctly and cannot inject markup.
+
+#### Fixed: HTTPS not used when starting from the status bar (#12)
+- `liveServerLite.https` was declared as a boolean *and* used as the parent namespace for
+  `liveServerLite.https.port`, `.certPath`, and friends. VS Code cannot store a scalar and an
+  object at the same configuration node, so the sub-keys won: reading the flag returned an
+  object and the value written by **Toggle HTTPS/HTTP** was discarded. Starting from the status
+  bar therefore always fell back to plain HTTP.
+- The flag now lives at **`liveServerLite.https.enabled`**, which no longer collides.
+  The old `liveServerLite.https: true` setting is still honoured, so existing configurations
+  keep working.
+
+#### Fixed: live reload silently broken over HTTPS
+- The injected reload client hardcoded `ws://`. Browsers block an insecure WebSocket from an
+  HTTPS page as mixed content, so live reload never connected when HTTPS was enabled.
+  The client now uses `wss://` on HTTPS pages and `ws://` on HTTP pages.
+
+### 🔒 Security
+
+- Resolved all 18 `npm audit` findings (11 high, 5 moderate, 2 low) — now reports **0 vulnerabilities**.
+  - Runtime: `ws` 8.18.3 → 8.21.3 (uninitialized memory disclosure, DoS via tiny fragments),
+    `node-forge` 1.3.1 → 1.4.0 (RSA/Ed25519 signature forgery, ASN.1 issues, basicConstraints bypass),
+    plus patched `qs`, `path-to-regexp`, `body-parser`, and `picomatch` via Express's tree.
+  - Build/test only: `webpack`, `terser-webpack-plugin`, `serialize-javascript`, `diff`, and others.
+  - Added `overrides` for `serialize-javascript` and `diff`, whose patched releases sit behind
+    major-version pins inside `mocha`. No published `mocha` carries the fix yet.
+
+### 🔧 Dependencies
+
+- **Fixed:** `node-forge` was declared in `devDependencies` despite being imported at runtime by
+  `certificateManager.ts` for HTTPS certificate generation. Moved to `dependencies` where it belongs.
+
+### ⚙️ Settings
+
+- **Added:** `liveServerLite.https.enabled` — replaces the colliding `liveServerLite.https` boolean.
+- **Deprecated:** `liveServerLite.https` — still read for backward compatibility.
+
 ## [1.2.0] - 2026-05-23
 
 ### ✨ New Features

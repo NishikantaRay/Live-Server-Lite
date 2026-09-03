@@ -99,17 +99,39 @@ export async function readFileContent(filePath: string): Promise<string> {
 }
 
 /**
- * Inject WebSocket script into HTML content
+ * Escape a string for safe interpolation into HTML markup.
  */
-export function injectWebSocketScript(html: string): string {
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Inject the live-reload WebSocket client into HTML content.
+ *
+ * The socket must use `wss:` when the page is served over HTTPS; a `ws:`
+ * connection from an HTTPS page is blocked as mixed content, which silently
+ * breaks live reload.
+ */
+export function injectWebSocketScript(html: string, isHttps: boolean = false): string {
+  const protocol = isHttps ? 'wss' : 'ws';
   const inject = `<script>
-    const ws = new WebSocket(\`ws://\${location.host}\`);
-    ws.onmessage = () => location.reload();
-    ws.onerror = () => console.log('WebSocket connection error');
+    (function () {
+      var ws = new WebSocket('${protocol}://' + location.host);
+      ws.onmessage = function () { location.reload(); };
+      ws.onerror = function () { console.log('WebSocket connection error'); };
+    })();
   </script>`;
-  
-  // Inject before closing </body>, or at end if no </body>
-  return html.replace(/<\/body>/i, `${inject}</body>`) + (!html.match(/<\/body>/i) ? inject : '');
+
+  // Inject before closing </body>, or append if there is no </body>
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, `${inject}</body>`);
+  }
+  return html + inject;
 }
 
 /**
@@ -125,4 +147,30 @@ export function getDefaultIgnorePatterns(): string[] {
     '**/coverage/**',
     '**/.nyc_output/**'
   ];
+}
+
+/**
+ * Read the HTTPS enabled flag, tolerating the legacy `liveServerLite.https`
+ * boolean setting.
+ *
+ * `liveServerLite.https` used to be declared as a boolean while
+ * `liveServerLite.https.*` sub-settings were declared alongside it. VS Code
+ * cannot store a scalar and an object at the same configuration node, so the
+ * sub-keys won and `get('https')` returned an object instead of the boolean the
+ * caller expected. The flag now lives at `liveServerLite.https.enabled`; users
+ * with the old setting in their settings.json are still honoured here.
+ */
+export function isHttpsEnabled(config: {
+  get<T>(section: string, defaultValue: T): T;
+}): boolean {
+  // Current, non-colliding key.
+  if (config.get<boolean>('https.enabled', false) === true) {
+    return true;
+  }
+
+  // Legacy key: only a real boolean `true` counts. When the namespace
+  // collision is in play this reads back as an object, which must not be
+  // treated as "enabled" just because objects are truthy.
+  const legacy = config.get<unknown>('https', false);
+  return legacy === true;
 }

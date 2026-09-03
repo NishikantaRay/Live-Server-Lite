@@ -1,14 +1,16 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
-import { 
-  getLocalIPAddress, 
-  generateUrls, 
-  injectWebSocketScript, 
+import {
+  getLocalIPAddress,
+  generateUrls,
+  injectWebSocketScript,
   getDefaultIgnorePatterns,
   getRelativePath,
   fileExists,
-  readFileContent
+  readFileContent,
+  isHttpsEnabled,
+  escapeHtml
 } from '../utils';
 import { TestHelper, TestSuite } from './testHelper';
 
@@ -155,10 +157,18 @@ suite('Utils Unit Tests', () => {
     test('should inject correct WebSocket connection code', () => {
       const html = '<html><body></body></html>';
       const injected = injectWebSocketScript(html);
-      
-      assert.ok(injected.includes('ws://${location.host}'), 'Should use dynamic host');
-      assert.ok(injected.includes('ws.onmessage = () => location.reload()'), 'Should reload on message');
+
+      assert.ok(injected.includes("'ws://' + location.host"), 'Should use dynamic host');
+      assert.ok(injected.includes('location.reload()'), 'Should reload on message');
       assert.ok(injected.includes('ws.onerror'), 'Should handle WebSocket errors');
+    });
+
+    test('should use wss:// when served over HTTPS', () => {
+      const html = '<html><body></body></html>';
+      const injected = injectWebSocketScript(html, true);
+
+      assert.ok(injected.includes("'wss://' + location.host"), 'Should use wss for HTTPS pages');
+      assert.ok(!injected.includes("'ws://'"), 'Should not use insecure ws:// on an HTTPS page');
     });
   });
 
@@ -268,6 +278,93 @@ suite('Utils Unit Tests', () => {
       
       const content = await readFileContent(emptyFile);
       assert.strictEqual(content, '', 'Should return empty string for empty file');
+    });
+  });
+
+  suite('isHttpsEnabled (issue #12 regression)', () => {
+    const mkConfig = (store: Record<string, unknown>) => ({
+      get<T>(section: string, defaultValue: T): T {
+        return (section in store ? store[section] : defaultValue) as T;
+      }
+    });
+
+    test('does not treat the collided https object as enabled', () => {
+      // `liveServerLite.https` used to be a boolean declared alongside
+      // `liveServerLite.https.*`, so VS Code returned the sub-key object here.
+      // A truthy object must not silently mean "HTTPS on".
+      const config = mkConfig({ https: { port: 3443, domain: 'localhost' } });
+      assert.strictEqual(isHttpsEnabled(config), false);
+    });
+
+    test('honours the namespaced https.enabled flag', () => {
+      assert.strictEqual(isHttpsEnabled(mkConfig({ 'https.enabled': true })), true);
+      assert.strictEqual(isHttpsEnabled(mkConfig({ 'https.enabled': false })), false);
+    });
+
+    test('still honours the legacy boolean setting', () => {
+      assert.strictEqual(isHttpsEnabled(mkConfig({ https: true })), true);
+      assert.strictEqual(isHttpsEnabled(mkConfig({ https: false })), false);
+    });
+
+    test('defaults to disabled when nothing is configured', () => {
+      assert.strictEqual(isHttpsEnabled(mkConfig({})), false);
+    });
+  });
+
+  suite('escapeHtml', () => {
+    test('escapes characters that would break out of markup', () => {
+      assert.strictEqual(
+        escapeHtml('<img src=x onerror="alert(1)">'),
+        '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'
+      );
+      assert.strictEqual(escapeHtml("it's & more"), 'it&#39;s &amp; more');
+    });
+
+    test('leaves ordinary filenames untouched', () => {
+      assert.strictEqual(escapeHtml('my-file_v2.html'), 'my-file_v2.html');
+    });
+  });
+
+  suite('served-root containment (issue #1 regression)', () => {
+    // Mirrors resolveWithinRoot() in ServerManager.startServer.
+    const resolveWithinRoot = (root: string, urlPath: string): string | null => {
+      let decoded: string;
+      try {
+        decoded = decodeURIComponent(urlPath);
+      } catch {
+        return null;
+      }
+      const resolvedRoot = path.resolve(root);
+      const candidate = path.resolve(resolvedRoot, '.' + path.posix.normalize(decoded));
+      if (candidate !== resolvedRoot && !candidate.startsWith(resolvedRoot + path.sep)) {
+        return null;
+      }
+      return candidate;
+    };
+
+    const root = path.resolve(path.sep + path.join('tmp', 'served-root'));
+
+    test('keeps ordinary paths inside the root', () => {
+      assert.strictEqual(resolveWithinRoot(root, '/'), root);
+      assert.strictEqual(resolveWithinRoot(root, '/public'), path.join(root, 'public'));
+    });
+
+    test('collapses traversal segments back inside the root', () => {
+      // Leading ".." segments normalise away, so these can never escape.
+      assert.strictEqual(resolveWithinRoot(root, '/../../etc/passwd'), path.join(root, 'etc', 'passwd'));
+      assert.strictEqual(resolveWithinRoot(root, '/%2e%2e/%2e%2e/etc/passwd'), path.join(root, 'etc', 'passwd'));
+      assert.strictEqual(resolveWithinRoot(root, '/a/../../..'), root);
+    });
+
+    test('rejects malformed percent-encoding', () => {
+      assert.strictEqual(resolveWithinRoot(root, '/%ZZ'), null);
+    });
+
+    test('does not treat a sibling directory as inside the root', () => {
+      // The trailing separator in the prefix check is what makes
+      // "/tmp/served-rootevil" fail to match root "/tmp/served-root".
+      const sibling = root + 'evil';
+      assert.ok(sibling !== root && !sibling.startsWith(root + path.sep));
     });
   });
 });

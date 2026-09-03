@@ -8,6 +8,7 @@ import { BrowserManager } from './browserManager';
 import { PreviewManager } from './previewManager';
 import { QrCodeManager } from './qrCodeManager';
 import { RequestLogEntry } from './types';
+import { isHttpsEnabled } from './utils';
 
 let serverManager: ServerManager;
 let statusBar: StatusBar;
@@ -185,7 +186,7 @@ async function startLiveServer(htmlUri?: vscode.Uri): Promise<void> {
     }
 
     const config = vscode.workspace.getConfiguration('liveServerLite');
-    const httpsEnabled = config.get<boolean>('https', false);
+    const httpsEnabled = isHttpsEnabled(config);
 
     let serverOptions;
     if (httpsEnabled) {
@@ -467,7 +468,7 @@ async function startHttpsServer(htmlUri?: vscode.Uri): Promise<void> {
 async function toggleHttpsMode(): Promise<void> {
   try {
     const config = vscode.workspace.getConfiguration('liveServerLite');
-    const currentHttpsMode = config.get<boolean>('https', false);
+    const currentHttpsMode = isHttpsEnabled(config);
 
     const selection = await vscode.window.showQuickPick([
       {
@@ -491,7 +492,7 @@ async function toggleHttpsMode(): Promise<void> {
       const useHttps = selection.value === 'https';
 
       // Update configuration
-      await config.update('https', useHttps, vscode.ConfigurationTarget.Workspace);
+      await config.update('https.enabled', useHttps, vscode.ConfigurationTarget.Workspace);
 
       // Restart server if it's running
       if (serverManager.isRunning()) {

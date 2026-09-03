@@ -260,7 +260,7 @@ Live Server Lite provides enterprise-grade HTTPS support for secure local develo
 **Method 3: Enable HTTPS in Settings**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.port": 3443,
   "liveServerLite.https.autoGenerateCert": true
 }
@@ -293,7 +293,7 @@ Add these settings to your `settings.json` for HTTPS customization:
 ```json
 {
   // Enable HTTPS by default
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   
   // HTTPS-specific settings
   "liveServerLite.https.port": 3443,
@@ -341,7 +341,7 @@ When you access `https://localhost:3443`, browsers will show security warnings l
 **Progressive Web Apps (PWAs)**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.domain": "localhost"
 }
 ```
@@ -350,7 +350,7 @@ Perfect for testing service workers, push notifications, and offline functionali
 **API Development & Testing**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.port": 3443,
   "liveServerLite.cors": true
 }
@@ -360,7 +360,7 @@ Test secure API endpoints and cross-origin requests.
 **Custom Domain Testing**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.domain": "myapp.localhost",
   "liveServerLite.https.port": 443
 }
@@ -452,7 +452,7 @@ For a seamless development experience without browser warnings:
 4. **Configure Live Server Lite**:
    ```json
    {
-     "liveServerLite.https": true,
+     "liveServerLite.https.enabled": true,
      "liveServerLite.https.certPath": "./localhost+2.pem",
      "liveServerLite.https.keyPath": "./localhost+2-key.pem",
      "liveServerLite.https.autoGenerateCert": false
@@ -483,7 +483,7 @@ Test with custom domains like `myapp.localhost`:
 3. **Configure settings**:
    ```json
    {
-     "liveServerLite.https": true,
+     "liveServerLite.https.enabled": true,
      "liveServerLite.https.domain": "myapp.localhost",
      "liveServerLite.https.certPath": "./myapp.localhost+1.pem",
      "liveServerLite.https.keyPath": "./myapp.localhost+1-key.pem"
@@ -516,7 +516,7 @@ For quick testing without certificate setup:
 ### **Progressive Web App (PWA) Development**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.domain": "localhost",
   "liveServerLite.https.port": 3443
 }
@@ -530,7 +530,7 @@ For quick testing without certificate setup:
 ### **Modern Web API Testing**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.autoGenerateCert": true,
   "liveServerLite.cors": true
 }
@@ -544,7 +544,7 @@ For quick testing without certificate setup:
 ### **Cross-Origin Development**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.domain": "api.localhost",
   "liveServerLite.host": "0.0.0.0",
   "liveServerLite.cors": true
@@ -559,7 +559,7 @@ For quick testing without certificate setup:
 ### **Mobile & Device Testing**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.host": "0.0.0.0",
   "liveServerLite.https.port": 3443,
   "liveServerLite.useNetworkInterface": true
@@ -903,7 +903,7 @@ Live Server Lite can be configured through VS Code settings. Add these to your `
   "liveServerLite.defaultFile": "index.html",
   "liveServerLite.autoOpenBrowser": true,
   "liveServerLite.cors": true,
-  "liveServerLite.https": false,
+  "liveServerLite.https.enabled": false,
   "liveServerLite.ignoreFiles": [
     "node_modules/**",
     ".git/**",
@@ -1026,7 +1026,7 @@ Create a `.vscode/settings.json` in your project root for project-specific setti
 #### **HTTPS Development (Secure Context)**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.port": 3443,
   "liveServerLite.https.domain": "localhost",
   "liveServerLite.https.autoGenerateCert": true,
@@ -1038,7 +1038,7 @@ Create a `.vscode/settings.json` in your project root for project-specific setti
 #### **Custom SSL Certificates**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.certPath": "./ssl/localhost.pem",
   "liveServerLite.https.keyPath": "./ssl/localhost-key.pem",
   "liveServerLite.https.autoGenerateCert": false,
@@ -1050,7 +1050,7 @@ Create a `.vscode/settings.json` in your project root for project-specific setti
 #### **Development with Custom Domain**
 ```json
 {
-  "liveServerLite.https": true,
+  "liveServerLite.https.enabled": true,
   "liveServerLite.https.domain": "myapp.localhost",
   "liveServerLite.https.port": 3443,
   "liveServerLite.host": "0.0.0.0"
@@ -1107,7 +1107,7 @@ Create a `.vscode/settings.json` in your project root for project-specific setti
 
 **Solutions:**
 1. **Accept the warning**: Click "Advanced" → "Proceed to localhost" (this is safe for development)
-2. **Use HTTP for basic development**: Set `"liveServerLite.https": false`
+2. **Use HTTP for basic development**: Set `"liveServerLite.https.enabled": false`
 3. **Disable warnings for development**: Add browser arguments:
    ```json
    {
@@ -1161,7 +1161,7 @@ Create a `.vscode/settings.json` in your project root for project-specific setti
 1. **Enable HTTPS**: 
    ```json
    {
-     "liveServerLite.https": true
+     "liveServerLite.https.enabled": true
    }
    ```
 2. **Use localhost**: Ensure you're accessing via `https://localhost:PORT`
@@ -1304,7 +1304,7 @@ Create a `.vscode/settings.json` in your project root for project-specific setti
   "liveServerLite.defaultFile": "index.html",
   "liveServerLite.autoOpenBrowser": true,
   "liveServerLite.cors": true,
-  "liveServerLite.https": false,
+  "liveServerLite.https.enabled": false,
   "liveServerLite.ignoreFiles": [
     "node_modules/**",
     ".git/**"
@@ -1470,7 +1470,7 @@ Live Server Lite: Toggle Notifications     # Enable/disable alerts
   "liveServerLite.openBrowser": true,
   
   // HTTPS settings
-  "liveServerLite.https": false,
+  "liveServerLite.https.enabled": false,
   "liveServerLite.https.port": 3443,
   "liveServerLite.https.autoGenerateCert": true,
   
